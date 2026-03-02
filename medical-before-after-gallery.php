@@ -3,7 +3,7 @@
  * Plugin Name: Medical Before After Gallery
  * Plugin URI: https://medicalbeforeaftergallery.com/
  * Description: Professional before-after image gallery plugin with filtering and categories for healthcare professionals. Free version with core features.
- * Version: 1.3.2
+ * Version: 1.3.3
  * Author: Medical Before After Gallery
  * Text Domain: medical-before-after-gallery
  * Domain Path: /languages
@@ -14,7 +14,7 @@
  * Requires PHP: 7.4
  *
  * @package Medical_Before_After_Gallery
- * @version 1.3.2
+ * @version 1.3.3
  * @author Medical Before After Gallery
  * @copyright Copyright (c) 2024, Medical Before After Gallery
  */

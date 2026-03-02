@@ -1,0 +1,90 @@
+# Deploy to WordPress.org plugin SVN on GitHub Release publish (or manual dispatch)
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PLUGIN_SLUG: medical-before-after-gallery
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y subversion rsync
+
+      - name: Determine tag
+        id: vars
+        run: |
+          if [ -n "${{ github.event.release.tag_name }}" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "TAG=${TAG}" >> $GITHUB_OUTPUT
+          echo "Deploying tag: ${TAG}"
+
+      - name: Export to SVN and commit
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          PLUGIN_SLUG: ${{ env.PLUGIN_SLUG }}
+        run: |
+          set -euo pipefail
+          TAG=${{ steps.vars.outputs.TAG }}
+          SVN_URL="https://plugins.svn.wordpress.org/${PLUGIN_SLUG}"
+          echo "SVN_URL=${SVN_URL}"
+
+          # Fresh checkout of top-level structure
+          rm -rf svn || true
+          svn checkout "${SVN_URL}" svn --depth immediates --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive || true
+
+          # Ensure trunk/tags/assets exist locally
+          mkdir -p svn/trunk svn/tags
+          svn update svn/trunk --set-depth infinity --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive || true
+          svn update svn/tags --set-depth infinity --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive || true
+
+          # Replace trunk with repository contents (exclude dev files)
+          rm -rf svn/trunk/*
+          rsync -av --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.github/workflows' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='build' \
+            --exclude='vendor' \
+            ./ svn/trunk/
+
+          # If you keep plugin page assets in repo/assets, copy them to svn/assets (banner/icons)
+          if [ -d "assets" ]; then
+            mkdir -p svn/assets
+            rsync -av --delete assets/ svn/assets/
+          fi
+
+          cd svn
+
+          # Add new files and remove deleted ones
+          svn add --force . || true
+          svn status | awk '/^!/{print $2}' | xargs -r svn rm
+
+          # Commit trunk
+          svn commit -m "Deploy ${TAG} from GitHub release ${TAG}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive || true
+
+          # Tag the release (copy trunk -> tags/TAG)
+          if [ -n "$TAG" ]; then
+            # Delete existing tag if present, then recreate
+            if svn info "tags/${TAG}" >/dev/null 2>&1; then
+              svn delete "tags/${TAG}" -m "Recreate tag ${TAG}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive || true
+            fi
+            svn cp trunk "tags/${TAG}" -m "Tag ${TAG}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive || true
+          fi
