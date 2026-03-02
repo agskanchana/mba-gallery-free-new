@@ -613,14 +613,15 @@ function medbeafgallery_output_custom_colors() {
 
         /* Clear Filters Button */
         .medbeafgallery-clear-filters {
-            background: var(--medbeafgallery-primary-solid) !important;
-            box-shadow: 0 2px 4px var(--medbeafgallery-primary-20) !important;
+            background: var(--medbeafgallery-primary-10) !important;
+            color: var(--medbeafgallery-primary-solid) !important;
+            border-color: var(--medbeafgallery-primary-20) !important;
         }
 
         .medbeafgallery-clear-filters:hover {
-            background: var(--medbeafgallery-primary-solid) !important;
-            filter: brightness(0.9);
-            box-shadow: 0 4px 8px var(--medbeafgallery-primary-20) !important;
+            background: var(--medbeafgallery-primary-20) !important;
+            color: var(--medbeafgallery-primary-solid) !important;
+            border-color: var(--medbeafgallery-primary-30) !important;
         }
 
         /* Image Pair Navigation */
