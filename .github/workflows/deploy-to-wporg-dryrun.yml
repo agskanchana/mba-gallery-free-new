@@ -1,8 +1,6 @@
-name: Deploy to WordPress.org
+name: Deploy to WordPress.org (dry-run)
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -12,7 +10,7 @@ env:
   PLUGIN_SLUG: medical-before-after-gallery
 
 jobs:
-  deploy:
+  dryrun:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,18 +22,20 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y subversion rsync
 
-      - name: Determine tag
+      - name: Determine tag (optional input fallback)
         id: vars
         run: |
+          # For manual runs there is no release object; you can set TAG via input when triggering if needed.
           if [ -n "${{ github.event.release.tag_name }}" ]; then
             TAG="${{ github.event.release.tag_name }}"
           else
             TAG="${GITHUB_REF#refs/tags/}"
           fi
+          # default empty is OK for a trunk-only dry-run
           echo "TAG=${TAG}" >> $GITHUB_OUTPUT
-          echo "Deploying tag: ${TAG}"
+          echo "Dry-run tag: ${TAG}"
 
-      - name: Export to SVN and commit
+      - name: Prepare svn checkout for dry-run
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
@@ -46,16 +46,14 @@ jobs:
           SVN_URL="https://plugins.svn.wordpress.org/${PLUGIN_SLUG}"
           echo "SVN_URL=${SVN_URL}"
 
-          # Fresh checkout of top-level structure
+          # Checkout WP.org SVN top-level (no commits will be made)
           rm -rf svn || true
           svn checkout "${SVN_URL}" svn --depth immediates --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive || true
 
-          # Ensure trunk/tags/assets exist locally
           mkdir -p svn/trunk svn/tags
           svn update svn/trunk --set-depth infinity --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive || true
-          svn update svn/tags --set-depth infinity --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive || true
 
-          # Replace trunk with repository contents (exclude dev files)
+          # Populate local trunk with repository contents for inspection
           rm -rf svn/trunk/*
           rsync -av --delete \
             --exclude='.git' \
@@ -67,7 +65,6 @@ jobs:
             --exclude='vendor' \
             ./ svn/trunk/
 
-          # If you keep plugin page assets in repo/assets, copy them to svn/assets
           if [ -d "assets" ]; then
             mkdir -p svn/assets
             rsync -av --delete assets/ svn/assets/
@@ -75,17 +72,17 @@ jobs:
 
           cd svn
 
-          # Add new files and remove deleted ones
-          svn add --force . || true
-          svn status | awk '/^!/{print $2}' | xargs -r svn rm
+          # Show what would be added/removed/changed
+          echo "=== SVN STATUS (what would change) ==="
+          svn status || true
 
-          # Commit trunk to WP.org SVN
-          svn commit -m "Deploy ${TAG} from GitHub release ${TAG}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive
+          echo "=== NEW (unversioned) files ==="
+          svn status | awk '/^\?/{print $2}' || true
 
-          # Tag the release (copy trunk -> tags/TAG)
-          if [ -n "$TAG" ]; then
-            if svn info "tags/${TAG}" >/dev/null 2>&1; then
-              svn delete "tags/${TAG}" -m "Recreate tag ${TAG}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive || true
-            fi
-            svn cp trunk "tags/${TAG}" -m "Tag ${TAG}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive
-          fi
+          echo "=== MISSING (deleted) files ==="
+          svn status | awk '/^!/{print $2}' || true
+
+          echo "=== DIFF (summary) ==="
+          svn diff --summarize || true
+
+          echo "DRY RUN: no svn commit or tag will be created by this workflow."
