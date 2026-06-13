@@ -1,0 +1,60 @@
+
+# Medical Before After Gallery POT File
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the Medical Before After Gallery package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Medical Before After Gallery 1.2.8\n"
+"Report-Msgid-Bugs-To: https://medicalbeforeaftergallery.com/support/\n"
+"POT-Creation-Date: 2025-08-14 12:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+
+#: medical-before-after-gallery.php:45
+msgid "Medical Before After Gallery requires PHP version %s or higher. You are running version %s."
+msgstr ""
+
+#: medical-before-after-gallery.php:52
+msgid "Medical Before After Gallery requires WordPress version %s or higher. You are running version %s."
+msgstr ""
+
+#: medical-before-after-gallery.php:62
+msgid "Medical Before After Gallery cannot be activated:"
+msgstr ""
+
+#: medical-before-after-gallery.php:118
+msgid "Security check failed"
+msgstr ""
+
+#: medical-before-after-gallery.php:118
+msgid "Security Error"
+msgstr ""
+
+#: medical-before-after-gallery.php:135
+msgid "Medical Before After Gallery Error: %s"
+msgstr ""
+
+#: medical-before-after-gallery.php:137
+msgid "Gallery temporarily unavailable. Please try again later."
+msgstr ""
+
+#: includes/shortcodes.php:25
+msgid "Loading..."
+msgstr ""
+
+#: includes/shortcodes.php:26
+msgid "An error occurred. Please try again."
+msgstr ""
+
+#: includes/shortcodes.php:27
+msgid "No results found."
+msgstr ""

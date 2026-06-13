@@ -1,0 +1,117 @@
+/* Cropper Modal */
+.medbeafgallery-cropper-modal {
+    display: none;
+    position: fixed;
+    z-index: 100000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.6);
+}
+
+.medbeafgallery-cropper-modal.active {
+    display: block;
+}
+
+.medbeafgallery-cropper-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.medbeafgallery-cropper-content {
+    background-color: #fff;
+    margin: 5% auto;
+    padding: 0;
+    width: 90%;
+    max-width: 800px;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    position: relative;
+    z-index: 100001;
+}
+
+.medbeafgallery-cropper-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #f9f9f9;
+    border-bottom: 1px solid #ddd;
+}
+
+.medbeafgallery-cropper-header h3 {
+    margin: 0;
+    font-size: 1.3em;
+}
+
+.medbeafgallery-cropper-close {
+    font-size: 24px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: #666;
+    padding: 0;
+    line-height: 1;
+}
+
+.medbeafgallery-cropper-close:hover {
+    color: #000;
+}
+
+.medbeafgallery-cropper-body {
+    padding: 20px;
+}
+
+.medbeafgallery-cropper-container {
+    max-height: 450px;
+    height: 400px;
+    overflow: hidden;
+}
+
+.medbeafgallery-cropper-container img {
+    max-width: 100%;
+    display: block;
+}
+
+.medbeafgallery-cropper-controls {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.medbeafgallery-cropper-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #ddd;
+    background-color: #f9f9f9;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Cropper.js adjustments */
+.cropper-container {
+    margin: 0 auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .medbeafgallery-cropper-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+
+    .medbeafgallery-cropper-container {
+        height: 300px;
+    }
+
+    .medbeafgallery-cropper-controls {
+        flex-wrap: wrap;
+    }
+}
