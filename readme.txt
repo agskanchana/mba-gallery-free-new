@@ -4,7 +4,7 @@ Tags: before-after, medical, gallery, comparison, healthcare
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.3.6
+Stable tag: 1.3.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://buymeacoffee.com/wpplugindev
@@ -86,6 +86,11 @@ Yes, the plugin includes various layout options and customization settings.
 
 == Changelog ==
 
+= 1.3.9 =
+* Fixed: HTML entities (such as &amp;) appearing as character codes in the case title and category inside the modal
+* Fixed: the "Main View" label no longer shows when a case has only a single before/after image pair
+* Improved: modal display on mobile devices
+
 = 1.2.4 =
 * Removed premium features for free version
 * Enhanced drag performance for before/after slider
@@ -95,6 +100,9 @@ Yes, the plugin includes various layout options and customization settings.
 * Optimized image loading performance
 
 == Upgrade Notice ==
+
+= 1.3.9 =
+Fixes garbled characters in the modal title and tidies the single-pair modal view.
 
 = 1.2.4 =
 Major update: simplified free version with core gallery features only.
