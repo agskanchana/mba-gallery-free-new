@@ -12,14 +12,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Normalize SVN credentials
+        id: normalize_svn_credentials
+        shell: bash
+        env:
+          RAW_SVN_USERNAME: ${{ secrets.SVN_USERNAME || secrets.WP_ORG_USERNAME }}
+          RAW_SVN_PASSWORD: ${{ secrets.SVN_PASSWORD || secrets.WP_ORG_PASSWORD }}
+        run: |
+          if [[ -z "${RAW_SVN_USERNAME}" || -z "${RAW_SVN_PASSWORD}" ]]; then
+            echo "Missing WordPress.org credentials. Configure SVN_USERNAME/SVN_PASSWORD or WP_ORG_USERNAME/WP_ORG_PASSWORD secrets."
+            exit 1
+          fi
+
+          SVN_USERNAME_CLEAN="${RAW_SVN_USERNAME//$'\r'/}"
+          SVN_PASSWORD_CLEAN="${RAW_SVN_PASSWORD//$'\r'/}"
+          SVN_USERNAME_CLEAN="${SVN_USERNAME_CLEAN%$'\n'}"
+          SVN_PASSWORD_CLEAN="${SVN_PASSWORD_CLEAN%$'\n'}"
+
+          echo "::add-mask::$SVN_USERNAME_CLEAN"
+          echo "::add-mask::$SVN_PASSWORD_CLEAN"
+
+          {
+            printf 'svn_username=%s\n' "$SVN_USERNAME_CLEAN"
+            printf 'svn_password=%s\n' "$SVN_PASSWORD_CLEAN"
+          } >> "$GITHUB_OUTPUT"
+
       - name: WordPress Plugin Deploy
         id: deploy
         uses: 10up/action-wordpress-plugin-deploy@stable
         with:
           generate-zip: true
         env:
-          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SVN_USERNAME: ${{ steps.normalize_svn_credentials.outputs.svn_username }}
+          SVN_PASSWORD: ${{ steps.normalize_svn_credentials.outputs.svn_password }}
           SLUG: medical-before-after-gallery
 
       # Optional: attach the built .zip to the GitHub Release for convenience
