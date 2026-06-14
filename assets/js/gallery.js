@@ -1513,6 +1513,16 @@ function updateModalCounter(currentIndex, totalItems) {
     }
 }
 
+// Decode HTML entities (e.g. WordPress encodes "&" in titles as "&#038;").
+// Reading such a value back through textContent would print the raw entity, so
+// decode it first. A <textarea> decodes without executing any markup.
+function medbeafgalleryDecodeEntities(str) {
+    if (str === null || str === undefined) return '';
+    const t = document.createElement('textarea');
+    t.innerHTML = String(str);
+    return t.value;
+}
+
 // Open modal and display case details - now a global function
 function openModal(id) {
     const item = galleryData.find(item => item.id === id);
@@ -1552,9 +1562,9 @@ function openModal(id) {
     }
 
     // Safely set modal content with null checks
-    if (caseTitle) caseTitle.textContent = item.title || 'Case Study';
+    if (caseTitle) caseTitle.textContent = medbeafgalleryDecodeEntities(item.title) || 'Case Study';
     if (caseDesc) caseDesc.innerHTML = item.description || '';
-    if (caseCategory) caseCategory.textContent = item.categoryName || item.category || 'Uncategorized';
+    if (caseCategory) caseCategory.textContent = medbeafgalleryDecodeEntities(item.categoryName || item.category) || 'Uncategorized';
 
     if (caseGender && item.gender) caseGender.textContent = capitalizeSentence(item.gender);
     if (caseAge && item.age) caseAge.textContent = item.age;
@@ -1642,6 +1652,12 @@ function openModal(id) {
     // Update navigation visibility if navigation exists
     if (imagePairsNav) {
         updatePairNavigation(imagePairs.length);
+    }
+
+    // Hide the per-pair label ("Main View") when there are no additional images —
+    // it only carries meaning when the viewer can move between multiple pairs.
+    if (pairInfoText) {
+        pairInfoText.style.display = imagePairs.length > 1 ? '' : 'none';
     }
 
     // Update counter with animation

@@ -3,7 +3,7 @@
  * Plugin Name: Medical Before After Gallery
  * Plugin URI: https://medicalbeforeaftergallery.com/
  * Description: Professional before-after image gallery plugin with filtering and categories for healthcare professionals. Free version with core features.
- * Version: 1.3.6
+ * Version: 1.3.9
  * Author: Medical Before After Gallery
  * Text Domain: medical-before-after-gallery
  * Domain Path: /languages
@@ -14,7 +14,7 @@
  * Requires PHP: 7.4
  *
  * @package Medical_Before_After_Gallery
- * @version 1.3.6
+ * @version 1.3.9
  * @author Medical Before After Gallery
  * @copyright Copyright (c) 2024, Medical Before After Gallery
  */
@@ -183,7 +183,7 @@ function medbeafgallery_advanced_filters_enabled() {
 
 
 // Define plugin constants
-define('MEDBEAFGALLERY_VERSION', '1.3.6');
+define('MEDBEAFGALLERY_VERSION', '1.3.9');
 define('MEDBEAFGALLERY_DB_VERSION', '1.0.0');
 define('MEDBEAFGALLERY_PATH', plugin_dir_path(__FILE__));
 define('MEDBEAFGALLERY_URL', plugin_dir_url(__FILE__));
