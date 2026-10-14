@@ -74,7 +74,7 @@ function medbeafgallery_shortcode($atts) {
         <!-- Gallery content -->
         <div class="medbeafgallery-gallery-content" id="medbeafgallery-gallery-content">
             <!-- Category Carousel - now populated by PHP -->
-            <?php echo wp_kses_post(medbeafgallery_render_category_carousel('carousel')); ?>
+            <?php echo wp_kses(medbeafgallery_render_category_carousel('carousel'), medbeafgallery_allowed_svg_html()); ?>
 
             <div class="medbeafgallery-gallery-layout">
                 <?php do_action('medbeafgallery_before_gallery_main'); ?>
@@ -83,7 +83,7 @@ function medbeafgallery_shortcode($atts) {
                     <!-- Active Filter Tags -->
                     <div class="medbeafgallery-active-filters" style="display:none;">
                         <div id="medbeafgallery-filter-tags" class="medbeafgallery-filter-tags"></div>
-                        <button id="medbeafgallery-clear-filters" class="medbeafgallery-clear-filters" style="display:none;"><?php esc_html_e('Clear All', 'medical-before-after-gallery'); ?></button>
+                        <button type="button" id="medbeafgallery-clear-filters" class="medbeafgallery-clear-filters" style="display:none;"><?php esc_html_e('Clear All', 'medical-before-after-gallery'); ?></button>
                     </div>
                     <!-- Grid Container for Gallery Items -->
 
@@ -101,9 +101,30 @@ function medbeafgallery_shortcode($atts) {
                     <div class="medbeafgallery-gallery-container"
                          data-category="<?php echo esc_attr($atts['default_category']); ?>"
                          data-per-page="<?php echo esc_attr($atts['items_per_page']); ?>">
+                        <?php
+                        /*
+                         * Skeleton placeholders rather than a bare spinner: they are
+                         * server-rendered, so the gallery has shape before any script
+                         * runs, and the page does not jump when the real cards land.
+                         *
+                         * Deliberately self-contained inside the loading indicator and
+                         * not injected into the real grid — Pro re-lays that grid out
+                         * as CSS columns, and stray children would be laid out too.
+                         */
+                        $skeleton_count = max(1, min(6, (int) $atts['items_per_page']));
+                        ?>
                         <div class="medbeafgallery-loading-indicator">
-                            <div class="medbeafgallery-spinner"></div>
-                            <p>Loading gallery...</p>
+                            <div class="medbeafgallery-skeleton-grid" aria-hidden="true">
+                                <?php for ($i = 0; $i < $skeleton_count; $i++) : ?>
+                                    <div class="medbeafgallery-skeleton-card">
+                                        <div class="medbeafgallery-skeleton medbeafgallery-skeleton-image"></div>
+                                        <div class="medbeafgallery-skeleton medbeafgallery-skeleton-line medbeafgallery-skeleton-title"></div>
+                                        <div class="medbeafgallery-skeleton medbeafgallery-skeleton-line"></div>
+                                        <div class="medbeafgallery-skeleton medbeafgallery-skeleton-line medbeafgallery-skeleton-short"></div>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
+                            <p class="screen-reader-text" role="status"><?php esc_html_e('Loading gallery…', 'medical-before-after-gallery'); ?></p>
                         </div>
                         <div class="medbeafgallery-gallery-grid" id="medbeafgallery-gallery-grid" style="display: none;">
                             <!-- Gallery items will be loaded via JavaScript -->
@@ -115,7 +136,7 @@ function medbeafgallery_shortcode($atts) {
 
                     <!-- Pagination -->
                     <div class="medbeafgallery-pagination">
-                        <button id="medbeafgallery-load-more" class="medbeafgallery-load-more" style="display: none;">Load More</button>
+                        <button type="button" id="medbeafgallery-load-more" class="medbeafgallery-load-more" style="display: none;"><?php esc_html_e('Load More', 'medical-before-after-gallery'); ?></button>
                     </div>
                 </main>
             </div>
@@ -123,43 +144,43 @@ function medbeafgallery_shortcode($atts) {
     </div>
 
     <!-- Modal for enlarged view -->
-    <div id="medbeafgallery-modal" class="medbeafgallery-modal">
+    <div id="medbeafgallery-modal" class="medbeafgallery-modal" role="dialog" aria-modal="true" aria-labelledby="medbeafgallery-case-title" aria-hidden="true" tabindex="-1">
         <div class="medbeafgallery-modal-content">
             <div class="medbeafgallery-modal-header">
                 <h2 id="medbeafgallery-case-title">Case Study Title</h2>
 
                 <!-- Image Controls moved to header -->
-                <div class="medbeafgallery-image-controls">
-                    <button class="medbeafgallery-control-btn medbeafgallery-split-view active" title="Split view">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"></line><path d="M8 8l-4 4 4 4"></path><path d="M16 16l4-4-4-4"></path></svg>
+                <div class="medbeafgallery-image-controls" role="group" aria-label="<?php esc_attr_e('Image comparison view', 'medical-before-after-gallery'); ?>">
+                    <button type="button" class="medbeafgallery-control-btn medbeafgallery-split-view active" aria-pressed="true" title="<?php esc_attr_e('Split view', 'medical-before-after-gallery'); ?>" aria-label="<?php esc_attr_e('Split view', 'medical-before-after-gallery'); ?>">
+                        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"></line><path d="M8 8l-4 4 4 4"></path><path d="M16 16l4-4-4-4"></path></svg>
                     </button>
-                    <button class="medbeafgallery-control-btn medbeafgallery-before-view" title="Before view">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"></rect><rect x="8" y="9" width="8" height="8"></rect></svg>
+                    <button type="button" class="medbeafgallery-control-btn medbeafgallery-before-view" aria-pressed="false" title="<?php esc_attr_e('Before view', 'medical-before-after-gallery'); ?>" aria-label="<?php esc_attr_e('Before view', 'medical-before-after-gallery'); ?>">
+                        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"></rect><rect x="8" y="9" width="8" height="8"></rect></svg>
                     </button>
-                    <button class="medbeafgallery-control-btn medbeafgallery-after-view" title="After view">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"></rect><rect x="8" y="9" width="8" height="8"></rect><circle cx="12" cy="13" r="2"></circle></svg>
+                    <button type="button" class="medbeafgallery-control-btn medbeafgallery-after-view" aria-pressed="false" title="<?php esc_attr_e('After view', 'medical-before-after-gallery'); ?>" aria-label="<?php esc_attr_e('After view', 'medical-before-after-gallery'); ?>">
+                        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"></rect><rect x="8" y="9" width="8" height="8"></rect><circle cx="12" cy="13" r="2"></circle></svg>
                     </button>
                 </div>
 
-                <span class="medbeafgallery-pair-info medbeafgallery-pair-description">Main View</span>
+                <span class="medbeafgallery-pair-info medbeafgallery-pair-description" aria-live="polite">Main View</span>
 
-                <button class="medbeafgallery-modal-close" aria-label="Close modal">&times;</button>
+                <button type="button" class="medbeafgallery-modal-close" aria-label="<?php esc_attr_e('Close', 'medical-before-after-gallery'); ?>"><span aria-hidden="true">&times;</span></button>
             </div>
 
             <div class="medbeafgallery-modal-body">
                 <div class="medbeafgallery-comparison-container">
                     <!-- Image Pairs Navigation -->
-                    <div class="medbeafgallery-image-pairs-nav">
-                        <button class="medbeafgallery-pair-nav medbeafgallery-pair-prev" title="Previous image pair">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="medbeafgallery-image-pairs-nav" role="group" aria-label="<?php esc_attr_e('Image pairs', 'medical-before-after-gallery'); ?>">
+                        <button type="button" class="medbeafgallery-pair-nav medbeafgallery-pair-prev" title="<?php esc_attr_e('Previous image pair', 'medical-before-after-gallery'); ?>" aria-label="<?php esc_attr_e('Previous image pair', 'medical-before-after-gallery'); ?>">
+                            <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
                         </button>
                         <div class="medbeafgallery-pair-indicators">
                             <!-- Will be populated dynamically -->
                         </div>
-                        <button class="medbeafgallery-pair-nav medbeafgallery-pair-next" title="Next image pair">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <button type="button" class="medbeafgallery-pair-nav medbeafgallery-pair-next" title="<?php esc_attr_e('Next image pair', 'medical-before-after-gallery'); ?>" aria-label="<?php esc_attr_e('Next image pair', 'medical-before-after-gallery'); ?>">
+                            <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="9 18 15 12 9 6"></polyline>
                             </svg>
                         </button>
@@ -182,14 +203,14 @@ function medbeafgallery_shortcode($atts) {
                 <!-- Case Details Panel (Pro feature — hidden unless Pro add-on is active) -->
                 <?php if ( apply_filters( 'medbeafgallery_show_details_panel', false ) ) : ?>
                 <div class="medbeafgallery-case-details">
-                    <div class="medbeafgallery-case-tabs">
-                        <button class="medbeafgallery-tab active" data-tab="description"><?php esc_html_e('Description', 'medical-before-after-gallery'); ?></button>
-                        <button class="medbeafgallery-tab" data-tab="details"><?php esc_html_e('Details', 'medical-before-after-gallery'); ?></button>
+                    <div class="medbeafgallery-case-tabs" role="tablist" aria-label="<?php esc_attr_e('Case information', 'medical-before-after-gallery'); ?>">
+                        <button type="button" class="medbeafgallery-tab active" data-tab="description" role="tab" id="medbeafgallery-tab-description" aria-controls="medbeafgallery-panel-description" aria-selected="true"><?php esc_html_e('Description', 'medical-before-after-gallery'); ?></button>
+                        <button type="button" class="medbeafgallery-tab" data-tab="details" role="tab" id="medbeafgallery-tab-details" aria-controls="medbeafgallery-panel-details" aria-selected="false" tabindex="-1"><?php esc_html_e('Details', 'medical-before-after-gallery'); ?></button>
                     </div>
-                    <div class="medbeafgallery-tab-content active" data-tab="description">
+                    <div class="medbeafgallery-tab-content active" data-tab="description" role="tabpanel" id="medbeafgallery-panel-description" aria-labelledby="medbeafgallery-tab-description" tabindex="0">
                         <div id="medbeafgallery-case-description"></div>
                     </div>
-                    <div class="medbeafgallery-tab-content" data-tab="details">
+                    <div class="medbeafgallery-tab-content" data-tab="details" role="tabpanel" id="medbeafgallery-panel-details" aria-labelledby="medbeafgallery-tab-details" tabindex="0">
                         <div class="medbeafgallery-detail-grid">
                             <div class="medbeafgallery-detail-item" id="medbeafgallery-detail-category" style="display:none;">
                                 <span class="medbeafgallery-detail-label"><?php esc_html_e('Category', 'medical-before-after-gallery'); ?></span>
@@ -224,14 +245,14 @@ function medbeafgallery_shortcode($atts) {
                     <div class="medbeafgallery-cta-container">
                         <div class="medbeafgallery-social-share">
                             <span><?php esc_html_e('Share:', 'medical-before-after-gallery'); ?></span>
-                            <button class="medbeafgallery-share-btn medbeafgallery-share-facebook" aria-label="<?php esc_attr_e('Share on Facebook', 'medical-before-after-gallery'); ?>" onclick="shareOnSocial('facebook')">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+                            <button type="button" class="medbeafgallery-share-btn medbeafgallery-share-facebook" aria-label="<?php esc_attr_e('Share on Facebook', 'medical-before-after-gallery'); ?>">
+                                <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
                             </button>
-                            <button class="medbeafgallery-share-btn medbeafgallery-share-twitter" aria-label="<?php esc_attr_e('Share on Twitter', 'medical-before-after-gallery'); ?>" onclick="shareOnSocial('twitter')">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/></svg>
+                            <button type="button" class="medbeafgallery-share-btn medbeafgallery-share-twitter" aria-label="<?php esc_attr_e('Share on Twitter', 'medical-before-after-gallery'); ?>">
+                                <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/></svg>
                             </button>
-                            <button class="medbeafgallery-share-btn medbeafgallery-share-email" aria-label="<?php esc_attr_e('Share via Email', 'medical-before-after-gallery'); ?>" onclick="shareOnSocial('email')">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                            <button type="button" class="medbeafgallery-share-btn medbeafgallery-share-email" aria-label="<?php esc_attr_e('Share via Email', 'medical-before-after-gallery'); ?>">
+                                <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                             </button>
                         </div>
                     </div>
@@ -242,23 +263,30 @@ function medbeafgallery_shortcode($atts) {
             <!-- Modal Navigation -->
             <div class="medbeafgallery-modal-nav">
                 <div class="medbeafgallery-modal-nav-container">
-                    <button class="medbeafgallery-modal-prev" aria-label="Previous case">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="15 18 9 12 15 6"></polyline>
+                    <?php /* The bar makes case navigation distinguishable from the image-pair
+                             arrows above, which are plain chevrons. Both pairs are on screen
+                             at once and an identical icon on each made them ambiguous. */ ?>
+                    <button type="button" class="medbeafgallery-modal-prev" aria-label="<?php esc_attr_e('Previous case', 'medical-before-after-gallery'); ?>">
+                        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 18 10 12 16 6"></polyline>
+                            <line x1="6" y1="6" x2="6" y2="18"></line>
                         </svg>
                     </button>
 
                     <div class="medbeafgallery-modal-counter-wrapper">
-                        <div class="medbeafgallery-modal-counter">
+                        <div class="medbeafgallery-modal-counter" aria-live="polite" aria-atomic="true">
+                            <span class="screen-reader-text"><?php esc_html_e('Case', 'medical-before-after-gallery'); ?> </span>
                             <span id="medbeafgallery-current-item" class="medbeafgallery-counter-current">1</span>
-                            <span class="medbeafgallery-counter-separator">/</span>
+                            <span class="medbeafgallery-counter-separator" aria-hidden="true">/</span>
+                            <span class="screen-reader-text"><?php esc_html_e('of', 'medical-before-after-gallery'); ?> </span>
                             <span id="medbeafgallery-total-items" class="medbeafgallery-counter-total">1</span>
                         </div>
                     </div>
 
-                    <button class="medbeafgallery-modal-next" aria-label="Next case">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="9 18 15 12 9 6"></polyline>
+                    <button type="button" class="medbeafgallery-modal-next" aria-label="<?php esc_attr_e('Next case', 'medical-before-after-gallery'); ?>">
+                        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="8 18 14 12 8 6"></polyline>
+                            <line x1="18" y1="6" x2="18" y2="18"></line>
                         </svg>
                     </button>
                 </div>
@@ -303,11 +331,13 @@ function medbeafgallery_render_category_carousel($display_mode = 'grid') {
         // Get the full term to check if it's a parent (has no parent itself)
         $term = get_term_by('slug', $category['slug'], 'medbeafgallery_category');
         if ($term && $term->parent == 0) {
-            // Only include if it has posts or child categories with posts
-            if (isset($category['count']) && $category['count'] > 0) {
-                $processed_categories[] = $category;
-                $processed_slugs[] = $category['slug'];
-            }
+            // Every term here already has cases on itself or beneath it:
+            // get_terms() (hide_empty, hierarchical) keeps an empty parent only
+            // when a descendant has cases. Its own count is 0 when every case is
+            // filed under a subcategory, and testing that count hid the tile —
+            // leaving those cases unreachable from the category bar.
+            $processed_categories[] = $category;
+            $processed_slugs[] = $category['slug'];
         }
     }
 
@@ -322,11 +352,11 @@ function medbeafgallery_render_category_carousel($display_mode = 'grid') {
     ?>
     <div class="<?php echo esc_attr($carousel_class); ?>" data-display-mode="<?php echo esc_attr($display_mode); ?>">
         <div class="medbeafgallery-nav-buttons">
-            <button class="medbeafgallery-nav-btn medbeafgallery-prev-btn" aria-label="Previous">
-                <span class="medbeafgallery-arrow-left">&#8592;</span>
+            <button type="button" class="medbeafgallery-nav-btn medbeafgallery-prev-btn" aria-label="<?php esc_attr_e('Scroll categories left', 'medical-before-after-gallery'); ?>">
+                <span class="medbeafgallery-arrow-left" aria-hidden="true">&#8592;</span>
             </button>
-            <button class="medbeafgallery-nav-btn medbeafgallery-next-btn" aria-label="Next">
-                <span class="medbeafgallery-arrow-right">&#8594;</span>
+            <button type="button" class="medbeafgallery-nav-btn medbeafgallery-next-btn" aria-label="<?php esc_attr_e('Scroll categories right', 'medical-before-after-gallery'); ?>">
+                <span class="medbeafgallery-arrow-right" aria-hidden="true">&#8594;</span>
             </button>
         </div>
 
@@ -416,9 +446,18 @@ function medbeafgallery_render_category_carousel($display_mode = 'grid') {
 
                         // Output the category item
                         ?>
-                        <div class="medbeafgallery-carousel-item <?php echo $is_active ? 'active' : ''; ?>" data-id="<?php echo esc_attr($category['slug']); ?>">
-                            <div class="medbeafgallery-category-image">
-                                <?php echo wp_kses_post($image_html); ?>
+                        <div class="medbeafgallery-carousel-item <?php echo $is_active ? 'active' : ''; ?>"
+                             data-id="<?php echo esc_attr($category['slug']); ?>"
+                             role="button"
+                             tabindex="0"
+                             aria-pressed="<?php echo $is_active ? 'true' : 'false'; ?>"
+                             aria-label="<?php echo esc_attr(sprintf(
+                                 /* translators: %s: category name */
+                                 __('Show %s', 'medical-before-after-gallery'),
+                                 $category['name']
+                             )); ?>">
+                            <div class="medbeafgallery-category-image" aria-hidden="true">
+                                <?php echo wp_kses($image_html, medbeafgallery_allowed_svg_html()); ?>
                             </div>
                             <span class="medbeafgallery-category-name"><?php echo esc_html($category['name']); ?></span>
                         </div>
