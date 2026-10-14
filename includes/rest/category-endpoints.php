@@ -28,16 +28,14 @@ function medbeafgallery_rest_get_categories() {
     // Get the "All" category ID so we can exclude it from the limit count
     $all_category_id = get_option('medbeafgallery_all_category_id');
 
-    // Get categories
-    $categories = get_terms(array(
-        'taxonomy' => 'medbeafgallery_category',
-        'hide_empty' => true,
-    ));
+    // Same term set as before; the helper additionally resolves each term's
+    // displayed count, which honours the 'rollup_subcategory_counts' setting.
+    $categories = medbeafgallery_get_visible_category_terms();
 
     $formatted_categories = array();
     $category_count = 0; // Counter for non-"All" categories
 
-    if (!is_wp_error($categories) && !empty($categories)) {
+    if (!empty($categories)) {
         foreach ($categories as $category) {
             // Skip the special "All" category in this loop (added separately below)
             if ($all_category_id && $category->term_id == $all_category_id) {
@@ -72,7 +70,7 @@ function medbeafgallery_rest_get_categories() {
                 'name' => $category->name,
                 'slug' => $category->slug,
                 'description' => $category->description,
-                'count' => $category->count,
+                'count' => medbeafgallery_get_category_display_count($category),
                 'imageUrl' => $image_url,
                 'parent' => $category->parent,
                 'parent_slug' => $parent_slug,
