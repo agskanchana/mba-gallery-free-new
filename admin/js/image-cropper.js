@@ -14,7 +14,6 @@
 
     // Debug function to help track issues
     function debug(message, data) {
-        console.log('Medical Before After Gallery Debug: ' + message, data || '');
     }
 
     // Initialize when document is ready
@@ -200,7 +199,6 @@
      * Apply the crop and save the image
      */
     function applyCrop() {
-        console.log('Medical Before After Gallery: Applying crop');
 
         if (!activeCropper || !activeImageData) {
             console.error('Medical Before After Gallery: Missing cropper or image data');

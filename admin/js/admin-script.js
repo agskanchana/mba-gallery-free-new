@@ -24,7 +24,6 @@
      * Handle image upload with cropping
      */
     function handleImageUpload(button, preview, inputField, removeButton) {
-        console.log('MEDBEAFGALLERY Gallery: handleImageUpload called');
 
         // Create media frame
         const frame = wp.media({
@@ -36,7 +35,6 @@
         // When image selected
         frame.on('select', function() {
             const attachment = frame.state().get('selection').first().toJSON();
-            console.log('MEDBEAFGALLERY Gallery: Media selected', attachment);
 
             // Check if cropping is enabled and the cropper module exists
             // Fix: Convert string '1' to boolean true by using == instead of === or by explicit conversion
@@ -47,26 +45,18 @@
 
             const cropperAvailable = typeof window.medbeafgalleryImageCropper !== 'undefined';
 
-            console.log('MEDBEAFGALLERY Gallery: Cropping enabled setting:', croppingEnabled);
-            console.log('MEDBEAFGALLERY Gallery: Raw medbeafgalleryAdmin.cropping_enabled value:', medbeafgalleryAdmin ? medbeafgalleryAdmin.cropping_enabled : 'undefined');
-            console.log('MEDBEAFGALLERY Gallery: Cropper available:', cropperAvailable);
-            console.log('MEDBEAFGALLERY Gallery: Window object check:', typeof window.medbeafgalleryImageCropper);
 
             if (croppingEnabled && cropperAvailable) {
                 // Use cropper
-                console.log('MEDBEAFGALLERY Gallery: Using cropper for image');
                 window.medbeafgalleryImageCropper.setActiveElements(button, inputField, preview);
                 window.medbeafgalleryImageCropper.showCropperModal(attachment);
             } else if (croppingEnabled && !cropperAvailable) {
                 // Cropping is enabled but cropper isn't ready yet, try again in a moment
-                console.log('MEDBEAFGALLERY Gallery: Cropper not ready, retrying...');
                 setTimeout(function() {
                     if (typeof window.medbeafgalleryImageCropper !== 'undefined') {
-                        console.log('MEDBEAFGALLERY Gallery: Using cropper for image (retry successful)');
                         window.medbeafgalleryImageCropper.setActiveElements(button, inputField, preview);
                         window.medbeafgalleryImageCropper.showCropperModal(attachment);
                     } else {
-                        console.log('MEDBEAFGALLERY Gallery: Cropper still not available, using direct image');
                         inputField.val(attachment.id);
                         preview.html('<img src="' + attachment.url + '" alt="Preview">');
                         removeButton.show();
@@ -74,8 +64,6 @@
                 }, 100);
             } else {
                 // No cropping - directly use the selected image
-                console.log('MEDBEAFGALLERY Gallery: Using image directly (no cropping)');
-                console.log('MEDBEAFGALLERY Gallery: Cropping enabled:', croppingEnabled, 'Cropper available:', cropperAvailable);
                 inputField.val(attachment.id);
                 preview.html('<img src="' + attachment.url + '" alt="Preview">');
                 removeButton.show();
