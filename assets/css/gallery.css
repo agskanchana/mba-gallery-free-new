@@ -122,8 +122,15 @@
 /* Carousel mode specific styles */
 .medbeafgallery-category-carousel.medbeafgallery-carousel-mode .medbeafgallery-carousel-wrapper {
   overflow: hidden; /* Prevent overflow in carousel mode */
-  /* Reserve gutters for the overlay arrows (6px inset + 44px button + 6px gap),
-     so the first and last category tiles are no longer sitting underneath them. */
+}
+
+/* Reserve gutters for the overlay arrows (6px inset + 44px button + 6px gap),
+   so the first and last category tiles are no longer sitting underneath them.
+   The :not()s lift this above the Pro add-on's own rule for the same selector:
+   Pro 1.4.1 and older set 30px there and load after this file, which put the
+   arrows back over the tiles. Pro's "all tiles fit" and tab styles keep their
+   own padding. */
+.medbeafgallery-category-carousel.medbeafgallery-carousel-mode:not(.mba-pro-cat-fits):not(.mba-pro-cat-tabs) .medbeafgallery-carousel-wrapper {
   padding-left: 56px;
   padding-right: 56px;
 }
@@ -2469,7 +2476,7 @@ html, body {
 /* Narrower gutters on small screens — 56px each side is too much of the
    viewport on a phone, and the arrows are smaller there anyway. */
 @media (max-width: 768px) {
-  .medbeafgallery-category-carousel.medbeafgallery-carousel-mode .medbeafgallery-carousel-wrapper {
+  .medbeafgallery-category-carousel.medbeafgallery-carousel-mode:not(.mba-pro-cat-fits):not(.mba-pro-cat-tabs) .medbeafgallery-carousel-wrapper {
     padding-left: 44px;
     padding-right: 44px;
   }

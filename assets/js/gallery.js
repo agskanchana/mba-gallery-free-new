@@ -253,6 +253,31 @@ function medbeafgalleryCategoryDescendants(categories) {
     return descendants;
 }
 
+// Over the free plan's limits (a lapsed Pro licence) only the first cases load,
+// while the server renders a tile for every category with cases: hide the tiles
+// none of the loaded cases belong to, so no tile opens an empty gallery. With
+// every case loaded this hides nothing.
+function medbeafgalleryHideEmptyCategoryTiles(cases) {
+    const present = new Set();
+    cases.forEach(item => {
+        (item.categories || []).forEach(cat => {
+            if (cat && cat.slug) present.add(cat.slug);
+        });
+        if (item.category) present.add(item.category);
+    });
+
+    document.querySelectorAll('.medbeafgallery-carousel-item[data-id]').forEach(tile => {
+        const slug = tile.getAttribute('data-id');
+        if (!slug || slug === 'all' || slug === 'ba_category_all') return;
+
+        const slugs = [slug].concat((galleryConfig.categoryDescendants && galleryConfig.categoryDescendants[slug]) || []);
+        if (!slugs.some(s => present.has(s))) {
+            // Inline !important: the tiles' own display rule is !important too.
+            tile.style.setProperty('display', 'none', 'important');
+        }
+    });
+}
+
 // Modify the fetchGalleryData function to not recreate the carousel
 
 async function fetchGalleryData() {
@@ -262,12 +287,20 @@ async function fetchGalleryData() {
         const categories = await categoriesResponse.json();
 
         // Known before the first render, so a parent category matches its
-        // subcategories' cases from the very first click.
-        galleryConfig.categoryDescendants = medbeafgalleryCategoryDescendants(categories);
+        // subcategories' cases from the very first click. The page carries the
+        // whole tree (shortcodes.php); /categories — capped at four categories on
+        // the free plan — is only the fallback, for pages that do not.
+        const pageTree = window.medbeafgalleryGalleryConfig && window.medbeafgalleryGalleryConfig.categoryDescendants;
+        galleryConfig.categoryDescendants = (pageTree && typeof pageTree === 'object' && !Array.isArray(pageTree) && Object.keys(pageTree).length)
+            ? pageTree
+            : medbeafgalleryCategoryDescendants(categories);
 
         // Fetch gallery items
         const galleryResponse = await fetch(`${medbeafgalleryRestBase}/gallery-data`);
         const galleryResult = await galleryResponse.json();
+
+        // Before the carousel is wired up, so it works with the final set of tiles.
+        medbeafgalleryHideEmptyCategoryTiles(galleryResult.cases || []);
 
         // DON'T re-create the carousel, just add events to existing elements
         initCarouselInteractions();
@@ -277,10 +310,11 @@ async function fetchGalleryData() {
             // Find the category information
             const category = categories.find(cat => cat.slug === item.category) || {};
 
-            // Add the category name to each item
+            // Add the category name to each item. The REST data already names it;
+            // the lookup misses whenever /categories was capped by the free plan.
             return {
                 ...item,
-                categoryName: category.name || 'Uncategorized'
+                categoryName: category.name || item.categoryName || 'Uncategorized'
             };
         });
 
@@ -860,6 +894,11 @@ function medbeafgalleryBindShareButtons() {
         const btn = e.target.closest('.medbeafgallery-share-btn');
         if (!btn) return;
 
+        // The Pro add-on's carousel modal (Pro 1.4.1 and older) still prints
+        // onclick="shareOnSocial(...)" on these buttons. That inline handler
+        // already shares; handling the click here too would share twice.
+        if (btn.hasAttribute('onclick')) return;
+
         e.preventDefault();
 
         if (btn.classList.contains('medbeafgallery-share-facebook')) {
@@ -966,9 +1005,36 @@ function navigateModal(direction) {
     openModal(newItem.id);
 }
 
+// The Pro add-on's category carousel (Pro 1.4.1 and older) prints its own copy
+// of this modal without the dialog and tab semantics the gallery's markup now
+// carries. Fill in only what is missing, so carousel-only pages get the same
+// screen-reader behaviour; the gallery's own modal is left exactly as it is.
+function medbeafgalleryBackfillModalSemantics(modal) {
+    if (!modal) return;
+
+    const defaults = {
+        'role': 'dialog',
+        'aria-modal': 'true',
+        'aria-labelledby': 'medbeafgallery-case-title',
+        'aria-hidden': modal.classList.contains('active') ? 'false' : 'true',
+        'tabindex': '-1'
+    };
+    Object.keys(defaults).forEach(name => {
+        if (!modal.hasAttribute(name)) modal.setAttribute(name, defaults[name]);
+    });
+
+    modal.querySelectorAll('.medbeafgallery-case-tabs').forEach(list => {
+        if (!list.hasAttribute('role')) list.setAttribute('role', 'tablist');
+    });
+    modal.querySelectorAll('.medbeafgallery-tab').forEach(tab => {
+        if (!tab.hasAttribute('role')) tab.setAttribute('role', 'tab');
+    });
+}
+
 // Initialize modal functionality with enhanced features
 function initModal() {
     const modal = document.getElementById('medbeafgallery-modal');
+    medbeafgalleryBackfillModalSemantics(modal);
     const modalClose = document.querySelector('.medbeafgallery-modal-close');
     const beforeImg = document.getElementById('medbeafgallery-before-img');
     const afterImg = document.getElementById('medbeafgallery-after-img');

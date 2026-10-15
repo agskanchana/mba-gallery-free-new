@@ -61,6 +61,11 @@ function medbeafgallery_shortcode($atts) {
         'restBase' => esc_url_raw(rest_url('medical-before-after-gallery/v1')),
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'pluginUrl' => MEDBEAFGALLERY_URL,
+        // Every category's subcategories, from the whole tree. gallery.js used to
+        // derive this from /categories, which the free plan caps at four
+        // categories, so on a site over that limit (a lapsed Pro licence) a parent
+        // tile lost the cases filed under any subcategory outside those four.
+        'categoryDescendants' => medbeafgallery_category_descendants_map() ?: new stdClass(),
     );
 
     $gallery_config = apply_filters('medbeafgallery_gallery_config', $gallery_config);

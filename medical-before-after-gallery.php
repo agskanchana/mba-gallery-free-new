@@ -3,18 +3,18 @@
  * Plugin Name: Medical Before After Gallery
  * Plugin URI: https://medicalbeforeaftergallery.com/
  * Description: Professional before-after image gallery plugin with filtering and categories for healthcare professionals. Free version with core features.
- * Version: 1.3.9
+ * Version: 1.4.0
  * Author: Medical Before After Gallery
  * Text Domain: medical-before-after-gallery
  * Domain Path: /languages
  * License: GPL v2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  * Requires at least: 5.0
- * Tested up to: 6.8
+ * Tested up to: 7.1
  * Requires PHP: 7.4
  *
  * @package Medical_Before_After_Gallery
- * @version 1.3.9
+ * @version 1.4.0
  * @author Medical Before After Gallery
  * @copyright Copyright (c) 2024, Medical Before After Gallery
  */
@@ -112,6 +112,7 @@ function medbeafgallery_uninstall_cleanup() {
 
     // User meta is shared by every site of a network: once is enough.
     delete_metadata('user', 0, 'medbeafgallery_warning_acknowledged', '', true);
+    delete_metadata('user', 0, 'medbeafgallery_pro_compat_dismissed', '', true);
 
     // Log cleanup completion
     if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
@@ -229,8 +230,12 @@ function medbeafgallery_advanced_filters_enabled() {
 
 
 // Define plugin constants
-define('MEDBEAFGALLERY_VERSION', '1.3.9');
+define('MEDBEAFGALLERY_VERSION', '1.4.0');
 define('MEDBEAFGALLERY_DB_VERSION', '1.0.0');
+// The Pro add-on release this version was built and tested with. An older Pro
+// keeps working; the owner is asked to update it (includes/pro-compat.php).
+// Raise it whenever a release depends on a matching Pro change.
+define('MEDBEAFGALLERY_RECOMMENDED_PRO_VERSION', '1.5.0');
 define('MEDBEAFGALLERY_PATH', plugin_dir_path(__FILE__));
 define('MEDBEAFGALLERY_URL', plugin_dir_url(__FILE__));
 define('MEDBEAFGALLERY_BASENAME', plugin_basename(__FILE__));
@@ -495,6 +500,7 @@ require_once MEDBEAFGALLERY_PATH . 'includes/shortcodes.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/admin-functions.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/rest.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/ajax-handlers.php';
+require_once MEDBEAFGALLERY_PATH . 'includes/pro-compat.php';
 
 // Include admin files
 if (is_admin()) {

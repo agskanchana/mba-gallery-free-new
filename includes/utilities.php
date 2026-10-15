@@ -999,11 +999,69 @@ body .medbeafgallery-carousel-item.active img { border-color: {$primary_color} !
 }
 
 /**
+ * Every category's descendant slugs, keyed by slug, from the whole category tree
+ * (not the free plan's capped /categories response).
+ *
+ * @return array<string, string[]> Only categories that have subcategories appear.
+ */
+function medbeafgallery_category_descendants_map() {
+    $terms = get_terms(array(
+        'taxonomy'   => 'medbeafgallery_category',
+        'hide_empty' => false,
+    ));
+    if (is_wp_error($terms) || empty($terms)) {
+        return array();
+    }
+
+    $slug_by_id = array();
+    foreach ($terms as $term) {
+        $slug_by_id[$term->term_id] = $term->slug;
+    }
+
+    $children = array();
+    foreach ($terms as $term) {
+        if ($term->parent && isset($slug_by_id[$term->parent])) {
+            $children[$slug_by_id[$term->parent]][] = $term->slug;
+        }
+    }
+
+    $map = array();
+    foreach ($children as $slug => $direct) {
+        $found = array();
+        $stack = $direct;
+        while ($stack) {
+            $next = array_pop($stack);
+            if (isset($found[$next])) {
+                continue;
+            }
+            $found[$next] = true;
+            if (isset($children[$next])) {
+                foreach ($children[$next] as $child) {
+                    $stack[] = $child;
+                }
+            }
+        }
+        $map[$slug] = array_keys($found);
+    }
+
+    return $map;
+}
+
+/**
  * Enqueue dynamic CSS file if it exists
+ *
+ * Only next to the gallery stylesheet it extends. It used to be enqueued on every
+ * front-end page, so each page without a gallery declared a dependency on a style
+ * that was never registered — WordPress logs a notice for that on every such page
+ * view, and never printed the file there anyway.
  */
 function medbeafgallery_enqueue_dynamic_css() {
     $css_url = get_option('medbeafgallery_dynamic_css_url', '');
-    if ($css_url && filter_var($css_url, FILTER_VALIDATE_URL)) {
+    if (!$css_url || !filter_var($css_url, FILTER_VALIDATE_URL)) {
+        return;
+    }
+
+    if (wp_style_is('medbeafgallery-css', 'registered')) {
         wp_enqueue_style('medbeafgallery-dynamic-css', $css_url, array('medbeafgallery-css'), MEDBEAFGALLERY_VERSION);
     }
 }
@@ -1011,6 +1069,9 @@ function medbeafgallery_enqueue_dynamic_css() {
 // Create dynamic CSS on settings save
 add_action('init', 'medbeafgallery_create_dynamic_css');
 add_action('wp_enqueue_scripts', 'medbeafgallery_enqueue_dynamic_css', 20);
+// A gallery (or a Pro embed) outside the post content registers the stylesheet
+// while it renders; the style is then printed in the footer.
+add_action('medbeafgallery_shortcode_rendered', 'medbeafgallery_enqueue_dynamic_css');
 
 /**
  * Error Handler for Medical Before After Gallery
