@@ -16,10 +16,20 @@ require_once MEDBEAFGALLERY_PATH . 'includes/rest/category-endpoints.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/rest/all-category-endpoints.php';
 
 /**
- * Check license for REST API access
+ * Permission callback for the public read-only gallery endpoints.
+ *
+ * These endpoints serve the same data the gallery shortcode renders to anonymous
+ * visitors, so they are intentionally public. This is not a license gate — the
+ * free/Pro case and category ceilings are enforced inside the callbacks
+ * themselves, at the data layer.
+ *
+ * Kept as a named function because the Pro add-on references it by name for its
+ * own /subcategories route.
+ *
+ * @return true
  */
 function medbeafgallery_rest_permission_check() {
-    return medbeafgallery_is_premium_active();
+    return true;
 }
 
 /**
@@ -30,14 +40,14 @@ function medbeafgallery_register_rest_routes() {
     register_rest_route('medical-before-after-gallery/v1', '/gallery-data', array(
         'methods' => 'GET',
         'callback' => 'medbeafgallery_rest_get_gallery_data',
-        'permission_callback' => 'medbeafgallery_rest_permission_check', // License required
+        'permission_callback' => 'medbeafgallery_rest_permission_check', // Public read endpoint
     ));
 
     // Categories endpoint
     register_rest_route('medical-before-after-gallery/v1', '/categories', array(
         'methods' => 'GET',
         'callback' => 'medbeafgallery_rest_get_categories',
-        'permission_callback' => 'medbeafgallery_rest_permission_check', // License required
+        'permission_callback' => 'medbeafgallery_rest_permission_check', // Public read endpoint
     ));
 
     // "All" category image endpoints (admin only)
@@ -45,7 +55,7 @@ function medbeafgallery_register_rest_routes() {
         'methods' => 'GET',
         'callback' => 'medbeafgallery_rest_get_all_category_image',
         'permission_callback' => function() {
-            return current_user_can('edit_posts') && medbeafgallery_is_premium_active();
+            return current_user_can('edit_posts');
         }
     ));
 
@@ -53,7 +63,7 @@ function medbeafgallery_register_rest_routes() {
         'methods' => 'POST',
         'callback' => 'medbeafgallery_rest_update_all_category_image',
         'permission_callback' => function() {
-            return current_user_can('edit_posts') && medbeafgallery_is_premium_active();
+            return current_user_can('edit_posts');
         }
     ));
 
@@ -61,7 +71,7 @@ function medbeafgallery_register_rest_routes() {
         'methods' => 'DELETE',
         'callback' => 'medbeafgallery_rest_delete_all_category_image',
         'permission_callback' => function() {
-            return current_user_can('edit_posts') && medbeafgallery_is_premium_active();
+            return current_user_can('edit_posts');
         }
     ));
 }

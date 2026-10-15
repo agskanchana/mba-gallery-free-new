@@ -174,6 +174,36 @@ function medbeafgallery_rest_get_gallery_data($request) {
             $per_page = $effective_limit;
         }
 
+        $page_size = $per_page;
+
+        // Guard against pagination walking past the free ceiling. The per-page
+        // cap above only bounds the size of each page — on its own it would let
+        // per_page=12&page=2 return cases 13-24.
+        //
+        // Note the offset is enforced by slicing the collected results rather
+        // than by shrinking $per_page: WP_Query derives its offset from
+        // paged * posts_per_page, so shrinking posts_per_page for a page that
+        // straddles the ceiling would silently re-point it at earlier cases.
+        $offset = 0;
+
+        if ($effective_limit > 0) {
+            if ($page < 1) {
+                $page = 1;
+            }
+
+            $offset = ($page - 1) * $per_page;
+
+            if ($offset >= $effective_limit) {
+                return array(
+                    'cases'       => array(),
+                    'total'       => 0,
+                    'total_pages' => $page_size > 0 ? (int) ceil($effective_limit / $page_size) : 0,
+                    'is_limited'  => true,
+                    'limit'       => $effective_limit,
+                );
+            }
+        }
+
         // Build query using the query builder
         $builder = new MedBeAfGalleryCaseQueryBuilder();
         $args = $builder
@@ -194,8 +224,10 @@ function medbeafgallery_rest_get_gallery_data($request) {
                 $query->the_post();
                 $cases[] = medbeafgallery_format_case_data(get_the_ID());
 
-                // Double-guard: stop collecting once we hit the hard limit
-                if ($effective_limit > 0 && count($cases) >= $effective_limit) {
+                // Double-guard: stop collecting once this page reaches the hard
+                // limit. Counted from the page's offset so a later page cannot
+                // slip past the ceiling.
+                if ($effective_limit > 0 && ($offset + count($cases)) >= $effective_limit) {
                     break;
                 }
             }
@@ -205,10 +237,23 @@ function medbeafgallery_rest_get_gallery_data($request) {
         // Total cases that actually exist in the DB (for "upgrade" messaging)
         $total_in_db = intval($query->found_posts);
 
+        // Report the capped page count, otherwise the front-end would render
+        // "next page" controls for pages the ceiling now returns empty.
+        $total_pages = (int) $query->max_num_pages;
+        // Unpaginated (per_page=-1, the default once Pro lifts the ceiling),
+        // WP_Query never computes max_num_pages, so a non-empty result
+        // reported zero pages.
+        if ($per_page === -1) {
+            $total_pages = $total_in_db > 0 ? 1 : 0;
+        }
+        if ($effective_limit > 0 && $page_size > 0) {
+            $total_pages = min($total_pages, (int) ceil($effective_limit / $page_size));
+        }
+
         $response = array(
             'cases'       => $cases,
             'total'       => count($cases),
-            'total_pages' => $query->max_num_pages,
+            'total_pages' => $total_pages,
         );
 
         // If more cases exist than the limit, tell the front-end so it can
@@ -257,6 +302,14 @@ function medbeafgallery_format_case_data($post_id) {
 
     $main_before_url = medbeafgallery_get_display_image_url($main_before_id, 'full');
     $main_after_url = medbeafgallery_get_display_image_url($main_after_id, 'full');
+
+    // Card-sized variants. The grid and the Pro masonry/carousel cards render
+    // these into ~200-400px slots, so shipping the full-resolution original
+    // there meant downloading multi-megabyte clinical photos to draw a thumbnail.
+    // The full-size URLs above are untouched — the modal and the Pro single-case
+    // embed still use them, and existing consumers keep working unchanged.
+    $main_before_thumb = medbeafgallery_get_card_image_url($main_before_id);
+    $main_after_thumb = medbeafgallery_get_card_image_url($main_after_id);
 
     // Get alt text for the images
     $main_before_alt = get_post_meta($main_before_id, '_wp_attachment_image_alt', true);
@@ -314,6 +367,9 @@ function medbeafgallery_format_case_data($post_id) {
                 $image_pairs[] = array(
                     'beforeImg' => $pair_before_url,
                     'afterImg' => $pair_after_url,
+                    // Card-sized variants; see medbeafgallery_get_card_image_url().
+                    'beforeThumb' => medbeafgallery_get_card_image_url($before_id),
+                    'afterThumb' => medbeafgallery_get_card_image_url($after_id),
                     'beforeAlt' => $pair_before_alt,
                     'afterAlt' => $pair_after_alt,
                     'description' => isset($pair['description']) ? $pair['description'] : ''
@@ -345,6 +401,14 @@ function medbeafgallery_format_case_data($post_id) {
             $age_group = '60+';
         }
     }
+
+    // Render the post content once; 'description' and 'content' both expose it.
+    // Read the content from the post object rather than get_the_content(), which
+    // depends on the loop globals and returns the wrong post (or nothing) when
+    // this function is called outside a loop — as the Pro single-case embed does.
+    $post_object  = get_post($post_id);
+    $raw_content  = ($post_object && !post_password_required($post_object)) ? $post_object->post_content : '';
+    $rendered_content = apply_filters('the_content', $raw_content);
 
     // Build case data
     $case_data = array(
@@ -378,15 +442,23 @@ function medbeafgallery_format_case_data($post_id) {
         'categoryNames' => $category_names,
         'beforeImg' => $main_before_url,
         'afterImg' => $main_after_url,
+        // Card-sized variants — additive, so an older Pro add-on that only knows
+        // about beforeImg/afterImg keeps rendering exactly as before.
+        'beforeThumb' => $main_before_thumb,
+        'afterThumb' => $main_after_thumb,
         'beforeAlt' => $main_before_alt,
         'afterAlt' => $main_after_alt,
         'imagePairs' => $image_pairs,
         'ageGroup' => $age_group,
         'procedureType' => $procedure, // Add procedureType for JavaScript compatibility
-        'description' => apply_filters('the_content', get_the_content()),
-        'content' => apply_filters('the_content', get_the_content()),
+        // Run the_content once and reuse it — the filter chain is expensive
+        // (shortcodes, oEmbed, wpautop, plus every other plugin's filters).
+        'description' => $rendered_content,
+        'content' => $rendered_content,
         'procedureInfo' => apply_filters('the_content', $procedure_info),
-        'permalink' => get_permalink($post_id)
+        // No 'permalink' key: the case post type is registered with
+        // publicly_queryable => false, so get_permalink() only ever produced a
+        // URL that 404s. Nothing consumed it.
     );
 
     // Debug logging

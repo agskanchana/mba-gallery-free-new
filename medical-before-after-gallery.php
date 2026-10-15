@@ -3,18 +3,18 @@
  * Plugin Name: Medical Before After Gallery
  * Plugin URI: https://medicalbeforeaftergallery.com/
  * Description: Professional before-after image gallery plugin with filtering and categories for healthcare professionals. Free version with core features.
- * Version: 1.3.9
+ * Version: 1.4.0
  * Author: Medical Before After Gallery
  * Text Domain: medical-before-after-gallery
  * Domain Path: /languages
  * License: GPL v2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  * Requires at least: 5.0
- * Tested up to: 6.8
+ * Tested up to: 7.1
  * Requires PHP: 7.4
  *
  * @package Medical_Before_After_Gallery
- * @version 1.3.9
+ * @version 1.4.0
  * @author Medical Before After Gallery
  * @copyright Copyright (c) 2024, Medical Before After Gallery
  */
@@ -89,57 +89,104 @@ if (!medbeafgallery_check_requirements()) {
  * Uninstall cleanup function
  */
 function medbeafgallery_uninstall_cleanup() {
-    // Remove plugin options
-    delete_option('medbeafgallery_settings');
-    delete_option('medbeafgallery_version');
-    delete_option('medbeafgallery_db_version');
+    // The plugin is inactive while it is uninstalled, so its post type and
+    // taxonomy were never registered on this request — and get_terms() /
+    // wp_delete_term() refuse an unregistered taxonomy, which left every
+    // category behind even when the owner asked for their data to be deleted.
+    if (function_exists('medbeafgallery_register_post_types') && !taxonomy_exists('medbeafgallery_category')) {
+        medbeafgallery_register_post_types();
+    }
 
-    // Remove user meta
+    // Deleting the plugin from Network Admin runs this once, in the main site.
+    // Every site of a network keeps its own options, cases and categories —
+    // and its own "delete data on uninstall" choice — so clean each one.
+    if (is_multisite()) {
+        foreach (get_sites(array('fields' => 'ids', 'number' => 0)) as $blog_id) {
+            switch_to_blog($blog_id);
+            medbeafgallery_uninstall_site_cleanup();
+            restore_current_blog();
+        }
+    } else {
+        medbeafgallery_uninstall_site_cleanup();
+    }
+
+    // User meta is shared by every site of a network: once is enough.
     delete_metadata('user', 0, 'medbeafgallery_warning_acknowledged', '', true);
-
-    // Remove transients
-    delete_transient('medbeafgallery_library_warning');
-    delete_transient('medbeafgallery_free_to_pro_migration');
-
-    // Get and remove all custom post type data
-    $posts = get_posts(array(
-        'post_type' => 'medbeafgallery_case',
-        'numberposts' => -1,
-        'post_status' => 'any'
-    ));
-
-    foreach ($posts as $post) {
-        // Delete all meta data first
-        $meta_keys = get_post_meta($post->ID);
-        foreach ($meta_keys as $key => $value) {
-            delete_post_meta($post->ID, $key);
-        }
-
-        // Delete the post
-        wp_delete_post($post->ID, true);
-    }
-
-    // Remove custom taxonomy terms
-    $taxonomies = array('medbeafgallery_category');
-
-    foreach ($taxonomies as $taxonomy) {
-        $terms = get_terms(array(
-            'taxonomy' => $taxonomy,
-            'hide_empty' => false
-        ));
-
-        foreach ($terms as $term) {
-            wp_delete_term($term->term_id, $taxonomy);
-        }
-    }
-
-    // Clear any cached data
-    wp_cache_flush();
+    delete_metadata('user', 0, 'medbeafgallery_pro_compat_dismissed', '', true);
 
     // Log cleanup completion
     if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
         call_user_func('error_log', 'Medical Before After Gallery: Uninstall cleanup completed');
     }
+}
+
+/**
+ * Remove the plugin's data from the current site (see medbeafgallery_uninstall_cleanup()).
+ */
+function medbeafgallery_uninstall_site_cleanup() {
+    // Read the opt-in BEFORE the settings option is deleted. Read it straight
+    // from the option rather than via medbeafgallery_get_settings(), because
+    // includes/utilities.php is not guaranteed to be loaded during uninstall.
+    $settings = get_option('medbeafgallery_settings', array());
+    $delete_content = is_array($settings) && !empty($settings['delete_data_on_uninstall']);
+
+    // Remove plugin options
+    delete_option('medbeafgallery_settings');
+    delete_option('medbeafgallery_version');
+    delete_option('medbeafgallery_db_version');
+
+    // Remove transients
+    delete_transient('medbeafgallery_library_warning');
+    delete_transient('medbeafgallery_free_to_pro_migration');
+
+    // Cases and categories are a medical practice's actual records, so they are
+    // preserved unless the owner explicitly opted in on the settings screen.
+    // Reinstalling the plugin then brings the whole gallery back.
+    if ($delete_content) {
+        // Get and remove all custom post type data. Every status: 'any' leaves
+        // out trashed cases (including those the free case limit trashes), so
+        // they used to survive "delete all data".
+        $posts = get_posts(array(
+            'post_type' => 'medbeafgallery_case',
+            'numberposts' => -1,
+            'post_status' => array_keys(get_post_stati())
+        ));
+
+        foreach ($posts as $post) {
+            // Delete all meta data first
+            $meta_keys = get_post_meta($post->ID);
+            foreach ($meta_keys as $key => $value) {
+                delete_post_meta($post->ID, $key);
+            }
+
+            // Delete the post
+            wp_delete_post($post->ID, true);
+        }
+
+        // Remove custom taxonomy terms
+        $taxonomies = array('medbeafgallery_category');
+
+        foreach ($taxonomies as $taxonomy) {
+            $terms = get_terms(array(
+                'taxonomy' => $taxonomy,
+                'hide_empty' => false
+            ));
+
+            if (!is_wp_error($terms)) {
+                foreach ($terms as $term) {
+                    wp_delete_term($term->term_id, $taxonomy);
+                }
+            }
+        }
+
+        // The "All" category pointer only means anything alongside the terms.
+        delete_option('medbeafgallery_all_category_id');
+    }
+
+    // Clear our own cached data. Deliberately not wp_cache_flush() — that would
+    // drop the entire site's object cache, not just this plugin's entries.
+    delete_transient('medbeafgallery_cases_cache');
+    delete_transient('medbeafgallery_categories_cache');
 }
 
 /**
@@ -183,8 +230,12 @@ function medbeafgallery_advanced_filters_enabled() {
 
 
 // Define plugin constants
-define('MEDBEAFGALLERY_VERSION', '1.3.9');
+define('MEDBEAFGALLERY_VERSION', '1.4.0');
 define('MEDBEAFGALLERY_DB_VERSION', '1.0.0');
+// The Pro add-on release this version was built and tested with. An older Pro
+// keeps working; the owner is asked to update it (includes/pro-compat.php).
+// Raise it whenever a release depends on a matching Pro change.
+define('MEDBEAFGALLERY_RECOMMENDED_PRO_VERSION', '1.5.0');
 define('MEDBEAFGALLERY_PATH', plugin_dir_path(__FILE__));
 define('MEDBEAFGALLERY_URL', plugin_dir_url(__FILE__));
 define('MEDBEAFGALLERY_BASENAME', plugin_basename(__FILE__));
@@ -220,7 +271,11 @@ if (!function_exists('medbeafgallery_enqueue_scripts')) {
 // Enqueue scripts and styles
 function medbeafgallery_enqueue_scripts() {
     // Only enqueue on pages that need it
-    if (!is_admin() && (has_shortcode(get_post()->post_content ?? '', 'medical-before-after-gallery') || is_singular('medbeafgallery_case'))) {
+    // The registered shortcode tag is 'medbeafgallery' — matching on the plugin
+    // slug here meant this whole function never fired. The shortcode callback
+    // enqueues the same handles, so this path is belt-and-braces for the common
+    // case where the shortcode sits in the main post content.
+    if (!is_admin() && has_shortcode(get_post()->post_content ?? '', 'medbeafgallery')) {
         // Register and enqueue CSS
         wp_register_style('medbeafgallery-css', MEDBEAFGALLERY_URL . 'assets/css/gallery.css', array(), MEDBEAFGALLERY_VERSION);
         wp_enqueue_style('medbeafgallery-css');
@@ -445,6 +500,7 @@ require_once MEDBEAFGALLERY_PATH . 'includes/shortcodes.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/admin-functions.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/rest.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/ajax-handlers.php';
+require_once MEDBEAFGALLERY_PATH . 'includes/pro-compat.php';
 
 // Include admin files
 if (is_admin()) {
@@ -522,9 +578,52 @@ function medbeafgallery_enforce_case_limit_on_save($post_id, $post, $update) {
         // Trash the post that was just created over the limit
         wp_trash_post($post_id);
         set_transient('medbeafgallery_case_limit_notice', true, 30);
-        wp_safe_redirect(admin_url('edit.php?post_type=medbeafgallery_case'));
-        exit;
+
+        // Only redirect for a genuine admin form submission. This hook also runs
+        // during WP-CLI runs, WXR imports, cron and REST writes, where calling
+        // exit would abort the whole run part-way through.
+        if (medbeafgallery_is_admin_form_request()) {
+            wp_safe_redirect(admin_url('edit.php?post_type=medbeafgallery_case'));
+            exit;
+        }
     }
+}
+
+/**
+ * Whether the current request is an interactive admin form submission.
+ *
+ * Used to decide when it is safe to redirect out of a save hook. Returns false
+ * for WP-CLI, WXR imports, cron, AJAX and REST, all of which run the same hooks
+ * but must not be terminated mid-run.
+ *
+ * @return bool
+ */
+function medbeafgallery_is_admin_form_request() {
+    if (defined('WP_CLI') && WP_CLI) {
+        return false;
+    }
+
+    if (defined('REST_REQUEST') && REST_REQUEST) {
+        return false;
+    }
+
+    if (defined('WP_IMPORTING') && WP_IMPORTING) {
+        return false;
+    }
+
+    if (function_exists('wp_doing_cron') && wp_doing_cron()) {
+        return false;
+    }
+
+    if (function_exists('wp_doing_ajax') && wp_doing_ajax()) {
+        return false;
+    }
+
+    if (!is_admin()) {
+        return false;
+    }
+
+    return isset($_SERVER['REQUEST_METHOD']) && strtoupper($_SERVER['REQUEST_METHOD']) === 'POST';
 }
 add_action('wp_insert_post', 'medbeafgallery_enforce_case_limit_on_save', 10, 3);
 

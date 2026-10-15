@@ -149,16 +149,105 @@ function medbeafgallery_add_all_category($categories) {
  *
  * @return array Categories array with image URLs
  */
-function medbeafgallery_get_categories_with_images() {
-    // Get the terms with count information — exclude categories with no published posts
-    $categories = get_terms(array(
+/**
+ * Category terms that should be shown in the gallery.
+ *
+ * Which terms are returned is unchanged from plain get_terms(): WordPress
+ * already keeps a parent whose descendants hold cases, because get_terms()
+ * takes 'hierarchical' => true by default. Parent tiles do not disappear.
+ *
+ * What this adds is the count. A term's own 'count' only covers cases assigned
+ * to it *directly*, so a parent whose cases all sit in subcategories renders a
+ * tile reading "0" — even though clicking it lists those cases, since tax_query
+ * includes child terms by default. When 'rollup_subcategory_counts' is on, each
+ * term's 'medbeafgallery_effective_count' totals its whole subtree so the number
+ * on the tile matches what the visitor gets when they click it.
+ *
+ * Off by default: it changes numbers visitors already see.
+ *
+ * @return WP_Term[] Visible terms, or an empty array.
+ */
+function medbeafgallery_get_visible_category_terms() {
+    $terms = get_terms(array(
         'taxonomy'   => 'medbeafgallery_category',
         'hide_empty' => true,
     ));
 
-    if (is_wp_error($categories) || empty($categories)) {
-        $categories = array();
+    if (is_wp_error($terms) || empty($terms)) {
+        return array();
     }
+
+    $settings = medbeafgallery_get_settings();
+
+    if (empty($settings['rollup_subcategory_counts'])) {
+        foreach ($terms as $term) {
+            $term->medbeafgallery_effective_count = (int) $term->count;
+        }
+
+        return $terms;
+    }
+
+    // Index children by parent so subtree totals cost one pass, not a query per
+    // term. Terms with no cases anywhere beneath them are already absent from
+    // $terms and would contribute zero regardless.
+    $children_of = array();
+    foreach ($terms as $term) {
+        $children_of[(int) $term->parent][] = $term;
+    }
+
+    foreach ($terms as $term) {
+        $term->medbeafgallery_effective_count = medbeafgallery_sum_category_tree_count($term, $children_of);
+    }
+
+    return $terms;
+}
+
+/**
+ * Total case count for a term including every descendant term.
+ *
+ * @param WP_Term $term        Term to total.
+ * @param array   $children_of Map of parent term ID => child terms.
+ * @param array   $seen        Term IDs already visited on this branch.
+ * @return int
+ */
+function medbeafgallery_sum_category_tree_count($term, $children_of, $seen = array()) {
+    $term_id = (int) $term->term_id;
+
+    // Guard against a corrupted parent chain that loops back on itself.
+    if (isset($seen[$term_id])) {
+        return 0;
+    }
+    $seen[$term_id] = true;
+
+    $total = (int) $term->count;
+
+    if (!empty($children_of[$term_id])) {
+        foreach ($children_of[$term_id] as $child) {
+            $total += medbeafgallery_sum_category_tree_count($child, $children_of, $seen);
+        }
+    }
+
+    return $total;
+}
+
+/**
+ * The case count to show on a category tile.
+ *
+ * Falls back to the term's own count for terms that did not come from
+ * medbeafgallery_get_visible_category_terms().
+ *
+ * @param WP_Term $term
+ * @return int
+ */
+function medbeafgallery_get_category_display_count($term) {
+    return isset($term->medbeafgallery_effective_count)
+        ? (int) $term->medbeafgallery_effective_count
+        : (int) $term->count;
+}
+
+function medbeafgallery_get_categories_with_images() {
+    // Get the terms with count information — exclude categories with no published posts
+    $categories = medbeafgallery_get_visible_category_terms();
 
     // Calculate total count for the "All" category
     $total_count = 0;
@@ -166,7 +255,10 @@ function medbeafgallery_get_categories_with_images() {
     // Format the categories array to include images
     $formatted_categories = array();
     foreach ($categories as $category) {
-        $total_count += $category->count;
+        // Per-tile count may include subcategories; the "All" total must not, or
+        // a parent and its children would each be counted toward the same cases.
+        $count = medbeafgallery_get_category_display_count($category);
+        $total_count += (int) $category->count;
 
         // Get the category image properly
         $category_image_url = medbeafgallery_get_category_image_url($category->term_id);
@@ -175,7 +267,7 @@ function medbeafgallery_get_categories_with_images() {
             'term_id' => $category->term_id,
             'name' => $category->name,
             'slug' => $category->slug,
-            'count' => $category->count,
+            'count' => $count,
             'image_url' => $category_image_url
         );
     }
@@ -246,7 +338,13 @@ class MedBeAfGallerySettings {
         'cropping_size' => 800,
         'cropping_width' => 800,
         'cropping_height' => 800,
-        'gallery_primary_color' => '#2563eb'
+        'gallery_primary_color' => '#2563eb',
+        // Off by default: uninstalling must not destroy a practice's case library
+        // unless the owner has explicitly asked for it.
+        'delete_data_on_uninstall' => false,
+        // Off by default: turning this on changes the case numbers visitors see
+        // on parent category tiles.
+        'rollup_subcategory_counts' => false
     );
 
     /**
@@ -372,13 +470,125 @@ function medbeafgallery_check_image_libraries() {
 /**
  * Get the appropriate image to display based on settings
  *
+ * Always returns a string. wp_get_attachment_image_url() returns false when the
+ * attachment has been deleted from the media library while a case still points
+ * at it; returning false here would end up in the REST payload and render as
+ * <img src="false"> on the front end.
+ *
  * @param int $attachment_id The attachment ID
  * @param string $size The image size
- * @return string The image URL to display
+ * @return string The image URL to display, or '' if the attachment is gone
  */
 function medbeafgallery_get_display_image_url($attachment_id, $size = 'full') {
     // Allow Pro add-on to substitute watermarked URL
-    return apply_filters('medbeafgallery_display_image_url', wp_get_attachment_image_url($attachment_id, $size), $attachment_id, $size);
+    $url = apply_filters('medbeafgallery_display_image_url', wp_get_attachment_image_url($attachment_id, $size), $attachment_id, $size);
+
+    return is_string($url) ? $url : '';
+}
+
+/**
+ * Get a card-sized image URL for grid / masonry / carousel thumbnails.
+ *
+ * Gallery cards render into roughly 200-400 CSS pixels, so serving the original
+ * upload there is enormously wasteful — clinical photos are routinely 4000px and
+ * several megabytes. This returns an intermediate size instead.
+ *
+ * Goes through medbeafgallery_get_display_image_url() so the Pro watermark
+ * filter still applies. Note that for a watermarked attachment the Pro add-on
+ * deliberately returns its single watermarked file whatever size is asked for —
+ * WordPress's generated sizes are derived from the untouched original, so
+ * honouring the size request there would serve an unwatermarked image. Those
+ * attachments therefore keep their current behaviour.
+ *
+ * Falls back automatically: if the requested size was never generated,
+ * wp_get_attachment_image_url() degrades to the next best available.
+ *
+ * @param int    $attachment_id The attachment ID.
+ * @param string $size          Registered image size to prefer.
+ * @return string URL, or '' if the attachment is gone.
+ */
+function medbeafgallery_get_card_image_url($attachment_id, $size = 'medium_large') {
+    /**
+     * Filter the image size used for gallery cards.
+     *
+     * @param string $size          Registered image size name.
+     * @param int    $attachment_id The attachment being rendered.
+     */
+    $size = apply_filters('medbeafgallery_card_image_size', $size, $attachment_id);
+
+    return medbeafgallery_get_display_image_url($attachment_id, $size);
+}
+
+/**
+ * Allowed HTML for gallery markup that contains inline SVG.
+ *
+ * wp_kses_post() strips <svg> and every child element, which blanks out the
+ * category placeholder tiles. This extends the standard post allowlist with the
+ * small set of SVG tags the gallery actually emits.
+ *
+ * Attribute names are matched lowercase by KSES; browsers case-correct the SVG
+ * ones (viewbox -> viewBox) when parsing inline SVG in an HTML document.
+ *
+ * @return array Allowed tags array for wp_kses().
+ */
+function medbeafgallery_allowed_svg_html() {
+    static $allowed = null;
+
+    if (null !== $allowed) {
+        return $allowed;
+    }
+
+    $shared = array(
+        'fill'             => true,
+        'fill-opacity'     => true,
+        'fill-rule'        => true,
+        'stroke'           => true,
+        'stroke-width'     => true,
+        'stroke-linecap'   => true,
+        'stroke-linejoin'  => true,
+        'opacity'          => true,
+        'transform'        => true,
+        'class'            => true,
+        'style'            => true,
+    );
+
+    $allowed = array_merge(wp_kses_allowed_html('post'), array(
+        'svg' => array_merge($shared, array(
+            'xmlns'               => true,
+            'width'               => true,
+            'height'              => true,
+            'viewbox'             => true,
+            'preserveaspectratio' => true,
+            'role'                => true,
+            'aria-hidden'         => true,
+            'aria-label'          => true,
+            'focusable'           => true,
+        )),
+        'g'        => $shared,
+        'defs'     => array(),
+        'rect'     => array_merge($shared, array('x' => true, 'y' => true, 'width' => true, 'height' => true, 'rx' => true, 'ry' => true)),
+        'circle'   => array_merge($shared, array('cx' => true, 'cy' => true, 'r' => true)),
+        'ellipse'  => array_merge($shared, array('cx' => true, 'cy' => true, 'rx' => true, 'ry' => true)),
+        'line'     => array_merge($shared, array('x1' => true, 'y1' => true, 'x2' => true, 'y2' => true)),
+        'polyline' => array_merge($shared, array('points' => true)),
+        'polygon'  => array_merge($shared, array('points' => true)),
+        'path'     => array_merge($shared, array('d' => true)),
+        'text'     => array_merge($shared, array(
+            'x'                 => true,
+            'y'                 => true,
+            'dx'                => true,
+            'dy'                => true,
+            'font-family'       => true,
+            'font-size'         => true,
+            'font-weight'       => true,
+            'text-anchor'       => true,
+            'dominant-baseline' => true,
+        )),
+        'tspan'    => array_merge($shared, array('x' => true, 'y' => true, 'dx' => true, 'dy' => true)),
+        'title'    => array(),
+    ));
+
+    return $allowed;
 }
 
 /**
@@ -789,11 +999,69 @@ body .medbeafgallery-carousel-item.active img { border-color: {$primary_color} !
 }
 
 /**
+ * Every category's descendant slugs, keyed by slug, from the whole category tree
+ * (not the free plan's capped /categories response).
+ *
+ * @return array<string, string[]> Only categories that have subcategories appear.
+ */
+function medbeafgallery_category_descendants_map() {
+    $terms = get_terms(array(
+        'taxonomy'   => 'medbeafgallery_category',
+        'hide_empty' => false,
+    ));
+    if (is_wp_error($terms) || empty($terms)) {
+        return array();
+    }
+
+    $slug_by_id = array();
+    foreach ($terms as $term) {
+        $slug_by_id[$term->term_id] = $term->slug;
+    }
+
+    $children = array();
+    foreach ($terms as $term) {
+        if ($term->parent && isset($slug_by_id[$term->parent])) {
+            $children[$slug_by_id[$term->parent]][] = $term->slug;
+        }
+    }
+
+    $map = array();
+    foreach ($children as $slug => $direct) {
+        $found = array();
+        $stack = $direct;
+        while ($stack) {
+            $next = array_pop($stack);
+            if (isset($found[$next])) {
+                continue;
+            }
+            $found[$next] = true;
+            if (isset($children[$next])) {
+                foreach ($children[$next] as $child) {
+                    $stack[] = $child;
+                }
+            }
+        }
+        $map[$slug] = array_keys($found);
+    }
+
+    return $map;
+}
+
+/**
  * Enqueue dynamic CSS file if it exists
+ *
+ * Only next to the gallery stylesheet it extends. It used to be enqueued on every
+ * front-end page, so each page without a gallery declared a dependency on a style
+ * that was never registered — WordPress logs a notice for that on every such page
+ * view, and never printed the file there anyway.
  */
 function medbeafgallery_enqueue_dynamic_css() {
     $css_url = get_option('medbeafgallery_dynamic_css_url', '');
-    if ($css_url && filter_var($css_url, FILTER_VALIDATE_URL)) {
+    if (!$css_url || !filter_var($css_url, FILTER_VALIDATE_URL)) {
+        return;
+    }
+
+    if (wp_style_is('medbeafgallery-css', 'registered')) {
         wp_enqueue_style('medbeafgallery-dynamic-css', $css_url, array('medbeafgallery-css'), MEDBEAFGALLERY_VERSION);
     }
 }
@@ -801,6 +1069,9 @@ function medbeafgallery_enqueue_dynamic_css() {
 // Create dynamic CSS on settings save
 add_action('init', 'medbeafgallery_create_dynamic_css');
 add_action('wp_enqueue_scripts', 'medbeafgallery_enqueue_dynamic_css', 20);
+// A gallery (or a Pro embed) outside the post content registers the stylesheet
+// while it renders; the style is then printed in the footer.
+add_action('medbeafgallery_shortcode_rendered', 'medbeafgallery_enqueue_dynamic_css');
 
 /**
  * Error Handler for Medical Before After Gallery

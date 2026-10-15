@@ -2,6 +2,7 @@
 /.git
 /.github
 /.wordpress-org
+/bin
 /node_modules
 
 # Dev files
@@ -9,5 +10,6 @@
 /.gitignore
 /.gitattributes
 /CHANGELOG.md
+/CLAUDE.md
 /README.md
 /*.zip

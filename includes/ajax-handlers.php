@@ -61,25 +61,36 @@ function medbeafgallery_crop_image_ajax() {
         return;
     }
 
+    // Confirm this really is a PHP upload and not an arbitrary server path.
+    // wp_handle_upload() checks this too; keeping it here means we reject a
+    // forged tmp_name with a clear error before touching the media APIs.
+    if (!is_uploaded_file($_FILES['file']['tmp_name'])) {
+        if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+            call_user_func('error_log', 'Medical Before After Gallery: Rejected a non-uploaded tmp_name');
+        }
+        wp_send_json_error(array('message' => 'Invalid upload'));
+        return;
+    }
+
     // Get upload directory info
     $upload_dir = wp_upload_dir();
 
     // Generate a unique filename
     $filename = wp_unique_filename($upload_dir['path'], 'cropped-' . time() . '.jpg');
-    $filepath = $upload_dir['path'] . '/' . $filename;
 
-    if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
-        call_user_func('error_log', 'Medical Before After Gallery: Saving cropped image to: ' . $filepath);
-    }
+    // This is a real browser upload sitting in $_FILES, so it goes through
+    // media_handle_upload(): that path uses move_uploaded_file() and re-checks
+    // is_uploaded_file() itself. media_handle_sideload() is the API for files
+    // already on the server — it rename()s instead, skipping both guards.
+    //
+    // media_handle_upload() takes the $_FILES key rather than a file array, so
+    // the desired name is applied by overriding the uploaded one first;
+    // wp_handle_upload() still sanitises and de-duplicates whatever we set.
+    $_FILES['file']['name'] = $filename;
 
-    // Use WordPress file handling instead of move_uploaded_file
-    $file_array = array(
-        'name' => $filename,
-        'tmp_name' => sanitize_text_field($_FILES['file']['tmp_name'])
-    );
-
-    // Use WordPress media handling
-    $id = media_handle_sideload($file_array, 0);
+    // test_form is off because this arrives via admin-ajax: $_POST['action'] is
+    // our own action name, not the 'wp_handle_upload' value the check expects.
+    $id = media_handle_upload('file', 0, array(), array('test_form' => false));
 
     if (is_wp_error($id)) {
         if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
@@ -107,11 +118,6 @@ function medbeafgallery_crop_image_ajax() {
     if ($post_id > 0) {
         update_post_meta($attach_id, '_medbeafgallery_case_id', $post_id);
     }
-
-    // Get settings
-    $settings = get_option('medbeafgallery_settings', array());
-
-    // Image processing completed successfully
 
     // Get the URL of the new attachment
     $attachment_url = wp_get_attachment_url($attach_id);

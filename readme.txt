@@ -2,9 +2,9 @@
 Contributors: agskanchana
 Tags: before-after, medical, gallery, comparison, healthcare
 Requires at least: 5.0
-Tested up to: 6.8
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.9
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://buymeacoffee.com/wpplugindev
@@ -86,6 +86,25 @@ Yes, the plugin includes various layout options and customization settings.
 
 == Changelog ==
 
+= 1.4.0 =
+* Fixed: category tiles showing no icon (their SVG icons were being stripped)
+* Fixed: share buttons opening two popup windows per click, and the second gallery on a page getting no working share buttons
+* Fixed: carousel arrows covering the first and last category tiles
+* Fixed: parent categories whose cases all sit in subcategories disappearing from the category bar, and listing no cases when clicked
+* Fixed: a deleted image showing as a broken image instead of a placeholder
+* Fixed: the settings screen showing defaults that were not actually in effect, so the first unchanged save quietly changed them; the "Settings saved" message now appears
+* Fixed: case descriptions in embeds outside the main gallery (Pro's single-case embed) showing the wrong text
+* Fixed: importing or creating cases from WP-CLI, the REST API or an import could stop part-way when the free case limit was reached
+* Fixed: a PHP notice logged on every page without a gallery when WordPress debugging is on (the colour stylesheet was loaded everywhere)
+* Fixed: on a site over the free plan's limits (for example after a Pro licence expires), parent categories missed some of their subcategories' cases, a category tile could open an empty gallery, and cards could read "Uncategorized"
+* Improved: gallery cards load a properly sized thumbnail instead of the full-size original (about 78% less image data per card)
+* Improved: placeholder cards while the gallery loads, instead of a blank space
+* Improved: accessibility — the case window is a proper dialog (keyboard focus stays inside and returns afterwards), category tiles work with the keyboard, selected states are announced, text sizes follow the visitor's browser settings, and animations respect "reduce motion"
+* Added: setting to show subcategory totals on category tiles (off by default)
+* Added: "Delete data on uninstall" setting (off by default) — deleting the plugin now keeps your cases and categories unless you opt in; with it on, trashed cases and every site of a multisite network are cleaned up too
+* Added: a notice when the Pro add-on is older than this version expects, and Pro embed shortcodes no longer print as raw text while Pro is inactive or unlicensed
+* Compatibility: works with every Pro add-on release; older Pro versions keep working (share buttons fire once, arrows keep clear of the tiles)
+
 = 1.3.9 =
 * Fixed: HTML entities (such as &amp;) appearing as character codes in the case title and category inside the modal
 * Fixed: the "Main View" label no longer shows when a case has only a single before/after image pair
@@ -100,6 +119,9 @@ Yes, the plugin includes various layout options and customization settings.
 * Optimized image loading performance
 
 == Upgrade Notice ==
+
+= 1.4.0 =
+Fixes blank category tiles and double share popups, loads much lighter thumbnails, improves accessibility, and keeps your cases when the plugin is deleted unless you opt in. Works with every Pro add-on version.
 
 = 1.3.9 =
 Fixes garbled characters in the modal title and tidies the single-pair modal view.

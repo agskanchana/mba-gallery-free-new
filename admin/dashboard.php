@@ -162,6 +162,12 @@ function medbeafgallery_process_settings() {
         // Category Display setting was removed from the UI — always use the carousel-with-navigation layout.
         $settings['category_display_mode'] = 'carousel';
 
+        // Count subcategory cases toward the parent category's displayed total.
+        $settings['rollup_subcategory_counts'] = isset($_POST['rollup_subcategory_counts']);
+
+        // Destructive-uninstall opt-in. Stays false unless the owner ticks it.
+        $settings['delete_data_on_uninstall'] = isset($_POST['delete_data_on_uninstall']);
+
         // Add debug lines for cropping settings
         if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
             call_user_func('error_log', 'MEDBEAFGALLERY Gallery: Cropping form submission - enabled: ' . (isset($_POST['cropping_enabled']) ? 'yes' : 'no'));
@@ -175,8 +181,14 @@ function medbeafgallery_process_settings() {
             call_user_func('error_log', 'MEDBEAFGALLERY Gallery: Settings saved - Cropping enabled: ' . ($settings['cropping_enabled'] ? 'yes' : 'no'));
         }
 
-        // Add admin notice
-        add_action('admin_notices', 'medbeafgallery_settings_saved_notice');
+        // Confirm the save. This runs from the dashboard page callback, after
+        // admin_notices has already fired, so a hooked notice never appeared —
+        // print it in place instead (WordPress moves notices to the top).
+        if (did_action('admin_notices')) {
+            medbeafgallery_settings_saved_notice();
+        } else {
+            add_action('admin_notices', 'medbeafgallery_settings_saved_notice');
+        }
     }
 }
 
@@ -195,20 +207,23 @@ function medbeafgallery_settings_saved_notice() {
  * Display the settings form with added watermarking section
  */
 function medbeafgallery_display_settings_form_main($settings) {
-    // Add default values if not set
+    // Show what is in effect. Callers pass get_option() with fallbacks of their
+    // own (cropping off, 800 × 600, #3498db) that differ from what the gallery
+    // and the case editor use for a setting that was never saved — so this
+    // screen misreported those values, and saving it unchanged switched the
+    // crop to 800 × 600 and the gallery colour from #2563eb to #3498db.
+    $saved    = get_option('medbeafgallery_settings', array());
+    $saved    = is_array($saved) ? $saved : array();
+    $settings = array_merge((array) $settings, medbeafgallery_get_settings());
     $settings = wp_parse_args($settings, array(
-        // Default cropping settings
-        'cropping_enabled' => false,
-        'cropping_size' => '800',
-        'cropping_width' => '',
-        'cropping_height' => '',
-        // Default design settings
-        'gallery_primary_color' => '#3498db',
         'category_display_mode' => 'carousel'
     ));
-    // Fallback: if width/height are empty, default to 800 × 600
-    if ( empty($settings['cropping_width']) )  { $settings['cropping_width']  = '800'; }
-    if ( empty($settings['cropping_height']) ) { $settings['cropping_height'] = '600'; }
+    // Until a width/height is saved, the case editor crops to
+    // cropping_size × cropping_size (admin-functions.php).
+    $crop_fallback = absint(isset($saved['cropping_size']) ? $saved['cropping_size'] : 800);
+    $crop_fallback = $crop_fallback ? $crop_fallback : 800;
+    if ( empty($saved['cropping_width']) )  { $settings['cropping_width']  = $crop_fallback; }
+    if ( empty($saved['cropping_height']) ) { $settings['cropping_height'] = $crop_fallback; }
     ?>
     <div class="medbeafgallery-admin-box medbeafgallery-settings-form">
         <h2><?php esc_html_e('Gallery Settings', 'medical-before-after-gallery'); ?></h2>
@@ -304,6 +319,35 @@ function medbeafgallery_display_settings_form_main($settings) {
                     </td>
                 </tr>
                 <?php /* Category Display setting removed — the gallery always uses "Carousel with Navigation". */ ?>
+                <tr>
+                    <th scope="row"><?php esc_html_e('Category Counts', 'medical-before-after-gallery'); ?></th>
+                    <td>
+                        <label for="rollup_subcategory_counts">
+                            <input type="checkbox" name="rollup_subcategory_counts" id="rollup_subcategory_counts" value="1" <?php checked(!empty($settings['rollup_subcategory_counts'])); ?>>
+                            <?php esc_html_e('Count subcategory cases toward their parent category', 'medical-before-after-gallery'); ?>
+                        </label>
+                        <p class="description"><?php esc_html_e('A category tile normally counts only the cases assigned to it directly, so a parent whose cases all sit in subcategories shows "0" — even though clicking it does list those cases. Turn this on to show the subtree total instead, matching what visitors actually see when they open the category. This changes the numbers on your category tiles.', 'medical-before-after-gallery'); ?></p>
+                    </td>
+                </tr>
+            </table>
+
+            <hr>
+
+            <h3><?php esc_html_e('Data &amp; Uninstall', 'medical-before-after-gallery'); ?></h3>
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><?php esc_html_e('On Uninstall', 'medical-before-after-gallery'); ?></th>
+                    <td>
+                        <label for="delete_data_on_uninstall">
+                            <input type="checkbox" name="delete_data_on_uninstall" id="delete_data_on_uninstall" value="1" <?php checked(!empty($settings['delete_data_on_uninstall'])); ?>>
+                            <?php esc_html_e('Also delete all cases, categories and their images when this plugin is deleted', 'medical-before-after-gallery'); ?>
+                        </label>
+                        <p class="description">
+                            <strong><?php esc_html_e('Leave this off unless you are sure.', 'medical-before-after-gallery'); ?></strong>
+                            <?php esc_html_e('When off, deleting the plugin removes only its settings — every case and category is left untouched, so reinstalling restores your gallery. When on, deleting the plugin permanently erases your entire case library. This cannot be undone.', 'medical-before-after-gallery'); ?>
+                        </p>
+                    </td>
+                </tr>
             </table>
 
             <p class="submit">
