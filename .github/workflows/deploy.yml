@@ -1,19 +1,102 @@
 name: Deploy to WordPress.org
 
+# Every push to main is checked for a new release. If the plugin's version is not
+# on WordPress.org yet, and is newer than the version there, CI and the release
+# checks run, the build (.distignore applied) is committed to the WordPress.org
+# SVN repository — trunk plus tags/<version> — and the commit is tagged with a
+# GitHub release carrying the same ZIP. A push that does not change the version
+# deploys nothing.
+#
+# Releasing therefore means: bump the version everywhere bin/check-release.sh
+# looks (plugin header, MEDBEAFGALLERY_VERSION, readme "Stable tag", a changelog
+# entry) and get that commit onto main.
+#
+# "Run workflow" on the Actions tab is a dry run: the same checks, SVN checkout
+# and build, nothing committed; the ZIP is attached to the run.
+
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: wordpress-org-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SLUG: medical-before-after-gallery
 
 jobs:
-  deploy:
-    name: Deploy to WordPress.org
+  detect:
+    name: New version?
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.compare.outputs.version }}
+      release: ${{ steps.compare.outputs.release }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+
+      - name: Compare with WordPress.org
+        id: compare
+        run: |
+          version=$(sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*\([^[:space:]]*\).*/\1/p' "$SLUG.php" | head -n1 | tr -d '\r')
+          live=$(curl -sf "https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&request%5Bslug%5D=$SLUG" | jq -r '.version // empty')
+          code=$(curl -s -o /dev/null -w '%{http_code}' "https://plugins.svn.wordpress.org/$SLUG/tags/$version/")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Plugin version: $version | WordPress.org stable: ${live:-unknown} | tags/$version: HTTP $code"
+
+          if [ -z "$version" ] || [ -z "$live" ]; then
+            echo "::error::Could not read the plugin version or the version on WordPress.org."
+            exit 1
+          fi
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$version is not a plain release number (x.y or x.y.z): not deploying it to WordPress.org."
+          elif [ "$code" = "200" ] || [ "$code" = "301" ]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "$version is already on WordPress.org: nothing to deploy."
+          elif [ "$code" != "404" ]; then
+            echo "::error::Could not check the WordPress.org SVN repository (HTTP $code)."
+            exit 1
+          elif [ "$(printf '%s\n%s\n' "$live" "$version" | sort -V | tail -n1)" != "$version" ]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::$version is older than $live on WordPress.org: not deploying a downgrade."
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "New version $version (WordPress.org has $live): deploying."
+          fi
+
+  ci:
+    needs: detect
+    if: needs.detect.outputs.release == 'true' || github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: ${{ github.event_name == 'workflow_dispatch' && 'Dry run' || 'Deploy' }}
+    needs: [detect, ci]
+    if: needs.detect.outputs.release == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # Settings → Environments → wordpress-org can require a reviewer, which turns
+    # every release into a one-click approval. Without rules it is a no-op.
+    environment: wordpress-org
+    permissions:
+      # Creating the GitHub release needs write access. Its absence is why the
+      # 1.3.6 run showed as failed even though the deploy itself had succeeded.
+      contents: write
+    # Every action in this job is pinned to a commit: the job holds the SVN
+    # password and a write token. (The 10up action requires the SVN secrets even
+    # for a dry run, so they are provided for "Run workflow" too.)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Release checks for this version
+        run: bash bin/check-release.sh "${{ needs.detect.outputs.version }}"
 
       - name: Normalize SVN credentials
-        id: normalize_svn_credentials
+        id: svn
         shell: bash
         env:
           RAW_SVN_USERNAME: ${{ secrets.SVN_USERNAME || secrets.WP_ORG_USERNAME }}
@@ -37,18 +120,29 @@ jobs:
             printf 'svn_password=%s\n' "$SVN_PASSWORD_CLEAN"
           } >> "$GITHUB_OUTPUT"
 
-      - name: WordPress Plugin Deploy
+      - name: WordPress.org SVN
         id: deploy
-        uses: 10up/action-wordpress-plugin-deploy@stable
+        uses: 10up/action-wordpress-plugin-deploy@54bd289b8525fd23a5c365ec369185f2966529c2 # 2.3.0
         with:
           generate-zip: true
+          dry-run: ${{ github.event_name == 'workflow_dispatch' }}
         env:
-          SVN_USERNAME: ${{ steps.normalize_svn_credentials.outputs.svn_username }}
-          SVN_PASSWORD: ${{ steps.normalize_svn_credentials.outputs.svn_password }}
-          SLUG: medical-before-after-gallery
+          SVN_USERNAME: ${{ steps.svn.outputs.svn_username }}
+          SVN_PASSWORD: ${{ steps.svn.outputs.svn_password }}
+          SLUG: ${{ env.SLUG }}
+          VERSION: ${{ needs.detect.outputs.version }}
 
-      # Optional: attach the built .zip to the GitHub Release for convenience
-      - name: Attach zip to GitHub release
-        uses: softprops/action-gh-release@v2
+      - name: Keep the ZIP with the run
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
+          name: ${{ env.SLUG }}-${{ needs.detect.outputs.version }}
+          path: ${{ steps.deploy.outputs.zip-path }}
+
+      - name: Tag + GitHub release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          tag_name: ${{ needs.detect.outputs.version }}
+          target_commitish: ${{ github.sha }}
           files: ${{ steps.deploy.outputs.zip-path }}
+          generate_release_notes: true
