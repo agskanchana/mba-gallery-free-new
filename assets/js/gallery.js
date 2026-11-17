@@ -201,14 +201,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // Check if CTA button should be hidden based on config
-    if (medbeafgalleryGalleryConfig && medbeafgalleryGalleryConfig.showCta === 'false') {
-        const ctaButton = document.getElementById('medbeafgallery-cta-button');
-        if (ctaButton) {
-            ctaButton.style.display = 'none';
-        }
-    }
-
     // Debug category structure
     debugCategoryStructure();
 
@@ -1050,7 +1042,6 @@ function initModal() {
     const nextButton = document.querySelector('.medbeafgallery-modal-next');
     const currentItemCounter = document.getElementById('medbeafgallery-current-item');
     const totalItemsCounter = document.getElementById('medbeafgallery-total-items');
-    const ctaButton = document.getElementById('medbeafgallery-cta-button');
 
     // Image view control buttons
     const splitViewBtn = document.querySelector('.medbeafgallery-split-view');
@@ -1647,7 +1638,6 @@ function openModal(id) {
     const procedureDescription = document.getElementById('medbeafgallery-procedure-description');
     const prevButton = document.querySelector('.medbeafgallery-modal-prev');
     const nextButton = document.querySelector('.medbeafgallery-modal-next');
-    const ctaButton = document.getElementById('medbeafgallery-cta-button');
     const imagePairsContainer = document.querySelector('.medbeafgallery-image-sets-container');
     const pairIndicators = document.querySelector('.medbeafgallery-pair-indicators');
     const pairInfoText = document.querySelector('.medbeafgallery-pair-description');

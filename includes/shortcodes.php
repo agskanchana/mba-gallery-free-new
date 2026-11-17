@@ -20,20 +20,18 @@ function medbeafgallery_shortcode($atts) {
     // Normalize attribute keys to lowercase
     $atts = array_change_key_case((array)$atts, CASE_LOWER);
 
-    // Get plugin settings
-    $settings = medbeafgallery_get_settings();
-
     // Default attributes - core features for free version
     $default_atts = array(
         'items_per_page' => 6,
         'default_category' => 'all',
-        'cta_text' => $settings['consultation_text'],
-        'cta_link' => $settings['consultation_url'],
-        'show_cta' => $settings['consultation_enabled'] ? 'true' : 'false',
-        'show_filters' => 'true'       // Always available
+        // 'false' hides the category bar and (with Pro) the filter sidebar/drawer.
+        'show_filters' => 'true'
     );
 
-    $atts = shortcode_atts($default_atts, $atts);
+    // The third argument runs the core `shortcode_atts_medbeafgallery` filter, so an
+    // add-on can declare attributes of its own.
+    $atts = shortcode_atts($default_atts, $atts, 'medbeafgallery');
+    $show_filters = !in_array(strtolower((string) $atts['show_filters']), array('false', '0', 'no', 'off'), true);
 
     // Enqueue necessary scripts and styles - optimized loading
     wp_enqueue_style('medbeafgallery-css', MEDBEAFGALLERY_URL . 'assets/css/gallery.css', array(), MEDBEAFGALLERY_VERSION);
@@ -52,9 +50,7 @@ function medbeafgallery_shortcode($atts) {
         'nonce' => wp_create_nonce('wp_rest'),
         'itemsPerPage' => intval($atts['items_per_page']),
         'defaultCategory' => esc_attr($atts['default_category']),
-        'ctaText' => esc_html($atts['cta_text']),
-        'ctaLink' => esc_url($atts['cta_link']),
-        'showCta' => esc_attr($atts['show_cta']),
+        'showFilters' => $show_filters ? 'true' : 'false',
         'categoryDisplayMode' => 'carousel',
         'galleryEndpoint' => 'gallery-data',
         'categoriesEndpoint' => 'categories',
@@ -71,15 +67,23 @@ function medbeafgallery_shortcode($atts) {
     $gallery_config = apply_filters('medbeafgallery_gallery_config', $gallery_config);
     wp_localize_script('medbeafgallery-js', 'medbeafgalleryGalleryConfig', $gallery_config);
 
+    // Expose this gallery's attributes to add-ons while it renders
+    // (medbeafgallery_get_current_shortcode_atts()).
+    medbeafgallery_set_current_shortcode_atts($atts);
+
     // Start output buffering
     ob_start();
 
     ?>
-    <div class="medbeafgallery-container" id="medbeafgallery-gallery-container">
+    <div class="medbeafgallery-container<?php echo $show_filters ? '' : ' medbeafgallery-no-filters'; ?>" id="medbeafgallery-gallery-container">
         <!-- Gallery content -->
         <div class="medbeafgallery-gallery-content" id="medbeafgallery-gallery-content">
             <!-- Category Carousel - now populated by PHP -->
-            <?php echo wp_kses(medbeafgallery_render_category_carousel('carousel'), medbeafgallery_allowed_svg_html()); ?>
+            <?php
+            if ($show_filters) {
+                echo wp_kses(medbeafgallery_render_category_carousel('carousel'), medbeafgallery_allowed_svg_html());
+            }
+            ?>
 
             <div class="medbeafgallery-gallery-layout">
                 <?php do_action('medbeafgallery_before_gallery_main'); ?>
@@ -304,6 +308,30 @@ function medbeafgallery_shortcode($atts) {
     return ob_get_clean();
 }
 add_shortcode('medbeafgallery', 'medbeafgallery_shortcode');
+
+/**
+ * Remember the attributes of the gallery shortcode that is rendering.
+ *
+ * @param array $atts Normalised shortcode attributes.
+ */
+function medbeafgallery_set_current_shortcode_atts($atts) {
+    $GLOBALS['medbeafgallery_current_shortcode_atts'] = is_array($atts) ? $atts : array();
+}
+
+/**
+ * The attributes of the gallery shortcode on this page, after defaults.
+ *
+ * Add-ons call this from the medbeafgallery_before_gallery_main action (or later)
+ * to honour per-gallery attributes such as show_filters. Empty before any
+ * gallery has rendered.
+ *
+ * @return array
+ */
+function medbeafgallery_get_current_shortcode_atts() {
+    return isset($GLOBALS['medbeafgallery_current_shortcode_atts']) && is_array($GLOBALS['medbeafgallery_current_shortcode_atts'])
+        ? $GLOBALS['medbeafgallery_current_shortcode_atts']
+        : array();
+}
 
 /**
  * Render the category carousel

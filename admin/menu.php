@@ -184,7 +184,7 @@ function medbeafgallery_pro_features_page() {
         <div class="medbeafgallery-offer-banner">
             <div class="offer-badge">
                 <span class="dashicons dashicons-tag"></span>
-                <?php esc_html_e('LIMITED TIME OFFER', 'medical-before-after-gallery'); ?>
+                <?php esc_html_e('PAY ONCE', 'medical-before-after-gallery'); ?>
             </div>
             <h2><?php esc_html_e('Upgrade to the Pro Add-on - One-Time Payment', 'medical-before-after-gallery'); ?></h2>
             <div class="pricing-box">
@@ -284,7 +284,7 @@ function medbeafgallery_pro_features_page() {
                 </div>
             </div>
             <p class="roi-description">
-                <?php esc_html_e('Just one new patient from your improved gallery pays for itself hundreds of times over. Showcase your work professionally and attract more clients!', 'medical-before-after-gallery'); ?>
+                <?php esc_html_e('If your gallery helps bring in even one new patient, Pro can pay for itself. Showcase your work professionally and attract more clients!', 'medical-before-after-gallery'); ?>
             </p>
         </div>
 
@@ -486,7 +486,7 @@ function medbeafgallery_pro_features_page() {
                     <?php esc_html_e('BEST VALUE', 'medical-before-after-gallery'); ?>
                 </span>
                 <h3><?php esc_html_e('Ready to Upgrade to the Pro Add-on?', 'medical-before-after-gallery'); ?></h3>
-                <p class="cta-tagline"><?php esc_html_e('Join hundreds of medical professionals who trust our plugin to showcase their work professionally.', 'medical-before-after-gallery'); ?></p>
+                <p class="cta-tagline"><?php esc_html_e('Every Pro feature for a one-time payment, with updates included.', 'medical-before-after-gallery'); ?></p>
                 
                 <div class="cta-features-mini">
                     <div class="mini-feature">
@@ -530,26 +530,47 @@ function medbeafgallery_pro_features_page() {
             </div>
         </div>
 
-        <!-- Testimonial Section -->
+        <!-- Reviews: real, public WordPress.org reviews of the free plugin, quoted
+             verbatim and linked. Not translatable on purpose — they are quotes. -->
+        <?php
+        $medbeafgallery_reviews = array(
+            array(
+                'text'   => 'Really happy with this plugin! I run a small clinic and needed a clean way to show before-and-after results. Setup was super easy, the slider looks professional, and it works great on mobile too.',
+                'author' => __('Anonymous reviewer', 'medical-before-after-gallery'),
+                'url'    => 'https://wordpress.org/support/topic/best-before-after-plugin-ive-tried/',
+            ),
+            array(
+                'text'   => 'This is by far the best WordPress before and after image tool i found on the internet. Easy to use, reliable, and low impact on site.',
+                'author' => 'yourguru16',
+                'url'    => 'https://wordpress.org/support/topic/most-complete-before-and-after-gallery-tool/',
+            ),
+            array(
+                'text'   => 'I love how it displays on mobile, way it shows before afters with split view, before only view and after only view. just love this plugin',
+                'author' => 'alex7087',
+                'url'    => 'https://wordpress.org/support/topic/love-it-4303/',
+            ),
+        );
+        ?>
         <div class="testimonials-section">
-            <h3><?php esc_html_e('What Medical Professionals Are Saying', 'medical-before-after-gallery'); ?></h3>
+            <h3><?php esc_html_e('What users say on WordPress.org', 'medical-before-after-gallery'); ?></h3>
             <div class="testimonials-grid">
+                <?php foreach ($medbeafgallery_reviews as $medbeafgallery_review) : ?>
                 <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <p class="testimonial-text"><?php esc_html_e('"Best money I\'ve spent on my practice website. The before-after galleries look incredibly professional and have helped convert more inquiries into actual patients."', 'medical-before-after-gallery'); ?></p>
-                    <p class="testimonial-author"><?php esc_html_e('- Dr. Sarah M., Cosmetic Surgeon', 'medical-before-after-gallery'); ?></p>
+                    <div class="stars" aria-label="<?php esc_attr_e('5 out of 5 stars', 'medical-before-after-gallery'); ?>">★★★★★</div>
+                    <p class="testimonial-text">&ldquo;<?php echo esc_html($medbeafgallery_review['text']); ?>&rdquo;</p>
+                    <p class="testimonial-author">
+                        &mdash; <a href="<?php echo esc_url($medbeafgallery_review['url']); ?>" target="_blank" rel="noopener noreferrer"><?php
+                        /* translators: %s: reviewer's WordPress.org username */
+                        echo esc_html(sprintf(__('%s on WordPress.org', 'medical-before-after-gallery'), $medbeafgallery_review['author']));
+                        ?></a>
+                    </p>
                 </div>
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <p class="testimonial-text"><?php esc_html_e('"The unlimited cases and watermarking features alone are worth it. Setup was easy and the support team is fantastic."', 'medical-before-after-gallery'); ?></p>
-                    <p class="testimonial-author"><?php esc_html_e('- Dr. James L., Dental Practice', 'medical-before-after-gallery'); ?></p>
-                </div>
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <p class="testimonial-text"><?php esc_html_e('"The ROI on this plugin is incredible. Paid for itself with one consultation. The filtering options help patients find exactly what they\'re looking for."', 'medical-before-after-gallery'); ?></p>
-                    <p class="testimonial-author"><?php esc_html_e('- Dr. Maria K., Dermatologist', 'medical-before-after-gallery'); ?></p>
-                </div>
+                <?php endforeach; ?>
             </div>
+            <p class="testimonials-source">
+                <?php esc_html_e('Reviews of the free plugin.', 'medical-before-after-gallery'); ?>
+                <a href="https://wordpress.org/support/plugin/medical-before-after-gallery/reviews/" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Read all reviews', 'medical-before-after-gallery'); ?></a>
+            </p>
         </div>
 
         <!-- FAQ Section -->

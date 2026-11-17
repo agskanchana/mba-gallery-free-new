@@ -331,9 +331,8 @@ function medbeafgallery_get_category_image_url($term_id, $size = 'thumbnail') {
  */
 class MedBeAfGallerySettings {
     private static $defaults = array(
-        'consultation_enabled' => true,
-        'consultation_url' => '',
-        'consultation_text' => 'Schedule a Consultation',
+        // No consultation_* keys: the free plugin never rendered a booking button
+        // (the booking button is a Pro feature, under Display Options).
         'cropping_enabled' => true,
         'cropping_size' => 800,
         'cropping_width' => 800,

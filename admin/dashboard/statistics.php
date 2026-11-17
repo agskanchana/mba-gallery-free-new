@@ -40,8 +40,11 @@ function medbeafgallery_get_dashboard_statistics() {
         $additional_pairs = get_post_meta($case_id, '_medbeafgallery_additional_image_pairs', true);
         if(is_array($additional_pairs)) {
             foreach($additional_pairs as $pair) {
-                if(!empty($pair['before_id'])) $total_images++;
-                if(!empty($pair['after_id'])) $total_images++;
+                // Pro saves before_image/after_image; before_id/after_id is an older
+                // spelling the gallery also reads. Counting only the latter missed
+                // every additional pair.
+                if(!empty($pair['before_image']) || !empty($pair['before_id'])) $total_images++;
+                if(!empty($pair['after_image']) || !empty($pair['after_id'])) $total_images++;
             }
         }
     }

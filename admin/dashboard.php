@@ -168,6 +168,10 @@ function medbeafgallery_process_settings() {
         // Destructive-uninstall opt-in. Stays false unless the owner ticks it.
         $settings['delete_data_on_uninstall'] = isset($_POST['delete_data_on_uninstall']);
 
+        // The consultation-button settings were removed (free never rendered the
+        // button and had no field for its link); drop values older versions saved.
+        unset($settings['consultation_enabled'], $settings['consultation_url'], $settings['consultation_text']);
+
         // Add debug lines for cropping settings
         if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
             call_user_func('error_log', 'MEDBEAFGALLERY Gallery: Cropping form submission - enabled: ' . (isset($_POST['cropping_enabled']) ? 'yes' : 'no'));
