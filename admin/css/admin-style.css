@@ -1772,3 +1772,48 @@
         grid-template-columns: 1fr;
     }
 }
+/* Compact Pro add-on card (free dashboard, no Pro licence) */
+.medbeafgallery-pro-overview .medbeafgallery-pro-overview-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+.medbeafgallery-pro-overview h2 {
+    margin: 0 0 4px;
+    font-size: 18px;
+}
+.medbeafgallery-pro-overview .medbeafgallery-pro-overview-head p {
+    margin: 0;
+    color: #50575e;
+}
+.medbeafgallery-pro-overview-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.medbeafgallery-pro-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.medbeafgallery-pro-overview-grid li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 12px 14px;
+    border: 1px solid #e2e4e7;
+    border-radius: 8px;
+    background: #f9fafb;
+    line-height: 1.4;
+}
+.medbeafgallery-pro-overview-grid .dashicons {
+    flex-shrink: 0;
+    color: #6366f1;
+}

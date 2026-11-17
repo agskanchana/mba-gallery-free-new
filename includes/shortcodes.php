@@ -25,7 +25,9 @@ function medbeafgallery_shortcode($atts) {
         'items_per_page' => 6,
         'default_category' => 'all',
         // 'false' hides the category bar and (with Pro) the filter sidebar/drawer.
-        'show_filters' => 'true'
+        'show_filters' => 'true',
+        // '' = Design → Card Style; 'split' or 'reveal' for this gallery only.
+        'card_style' => ''
     );
 
     // The third argument runs the core `shortcode_atts_medbeafgallery` filter, so an
@@ -34,8 +36,16 @@ function medbeafgallery_shortcode($atts) {
     $show_filters = !in_array(strtolower((string) $atts['show_filters']), array('false', '0', 'no', 'off'), true);
 
     $settings       = medbeafgallery_get_settings();
-    $card_style     = (isset($settings['card_style']) && $settings['card_style'] === 'reveal') ? 'reveal' : 'split';
+    $card_style     = in_array($atts['card_style'], array('split', 'reveal'), true)
+        ? $atts['card_style']
+        : ((isset($settings['card_style']) && $settings['card_style'] === 'reveal') ? 'reveal' : 'split');
     $photo_backdrop = (isset($settings['photo_backdrop']) && $settings['photo_backdrop'] === 'plain') ? 'plain' : 'blur';
+
+    // Expose this gallery's attributes to add-ons while it renders
+    // (medbeafgallery_get_current_shortcode_atts()): set first, so the
+    // shortcode_rendered action, the config filter and the
+    // before_gallery_main action all see them.
+    medbeafgallery_set_current_shortcode_atts($atts);
 
     // Enqueue necessary scripts and styles - optimized loading
     wp_enqueue_style('medbeafgallery-css', MEDBEAFGALLERY_URL . 'assets/css/gallery.css', array(), MEDBEAFGALLERY_VERSION);
@@ -75,10 +85,6 @@ function medbeafgallery_shortcode($atts) {
 
     $gallery_config = apply_filters('medbeafgallery_gallery_config', $gallery_config);
     wp_localize_script('medbeafgallery-js', 'medbeafgalleryGalleryConfig', $gallery_config);
-
-    // Expose this gallery's attributes to add-ons while it renders
-    // (medbeafgallery_get_current_shortcode_atts()).
-    medbeafgallery_set_current_shortcode_atts($atts);
 
     // Start output buffering
     ob_start();
