@@ -346,6 +346,19 @@ function medbeafgallery_pro_features_page() {
                         <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
                         <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
                     </tr>
+                    <?php
+                    // Features both versions have (free 1.5.0).
+                    foreach (array(
+                        __('Hover-Reveal Cards', 'medical-before-after-gallery'),
+                        __('Blurred Photo Background in the Case Window', 'medical-before-after-gallery'),
+                        __('Doctor Cards', 'medical-before-after-gallery'),
+                    ) as $medbeafgallery_both) : ?>
+                    <tr>
+                        <td><?php echo esc_html($medbeafgallery_both); ?></td>
+                        <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
+                        <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
+                    </tr>
+                    <?php endforeach; ?>
                     <tr class="pro-feature">
                         <td><?php esc_html_e('Multiple Before-After Pairs', 'medical-before-after-gallery'); ?></td>
                         <td><span class="dashicons dashicons-dismiss feature-not-included"></span></td>
@@ -416,6 +429,24 @@ function medbeafgallery_pro_features_page() {
                         <td><span class="dashicons dashicons-dismiss feature-not-included"></span></td>
                         <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
                     </tr>
+                    <?php
+                    // Pro 1.6.0 additions.
+                    foreach (array(
+                        __('Case-Window Styles: Cinema, Drawer, Comparison Desk, Case Story, Phone Story Mode', 'medical-before-after-gallery'),
+                        __('Gallery Layouts and Style Presets', 'medical-before-after-gallery'),
+                        __('Progress Timeline with Dated Photos', 'medical-before-after-gallery'),
+                        __('"Find by Area" Body Map and "Help Me Choose"', 'medical-before-after-gallery'),
+                        __('Ghost Camera, Photo Line-Up Tool and Transformation Reels', 'medical-before-after-gallery'),
+                        __('Filter by Doctor', 'medical-before-after-gallery'),
+                        __('AI Write-ups and Alt Text (WordPress 7)', 'medical-before-after-gallery'),
+                        __('Setup Wizard, Live Preview and Ready-to-Publish Checklist', 'medical-before-after-gallery'),
+                    ) as $medbeafgallery_pro_only) : ?>
+                    <tr class="pro-feature">
+                        <td><?php echo esc_html($medbeafgallery_pro_only); ?></td>
+                        <td><span class="dashicons dashicons-dismiss feature-not-included"></span></td>
+                        <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
+                    </tr>
+                    <?php endforeach; ?>
                     <tr class="pro-feature">
                         <td><?php esc_html_e('Premium Support', 'medical-before-after-gallery'); ?></td>
                         <td><span class="dashicons dashicons-dismiss feature-not-included"></span></td>
@@ -429,6 +460,38 @@ function medbeafgallery_pro_features_page() {
             <h3><?php esc_html_e('Pro Features Highlights', 'medical-before-after-gallery'); ?></h3>
 
             <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="dashicons dashicons-welcome-view-site"></span>
+                    </div>
+                    <h4><?php esc_html_e('Case-Window Styles', 'medical-before-after-gallery'); ?></h4>
+                    <p><?php esc_html_e('Cinema, side drawer, a comparison desk with a linked magnifier, a scrolling case story — and a swipeable story mode on phones.', 'medical-before-after-gallery'); ?></p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="dashicons dashicons-chart-line"></span>
+                    </div>
+                    <h4><?php esc_html_e('Progress Timeline', 'medical-before-after-gallery'); ?></h4>
+                    <p><?php esc_html_e('Show real, dated photos from each stage — 6 weeks, 3 months, 1 year — on a scrubber. Never blended or invented.', 'medical-before-after-gallery'); ?></p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="dashicons dashicons-location"></span>
+                    </div>
+                    <h4><?php esc_html_e('Find by Area & Help Me Choose', 'medical-before-after-gallery'); ?></h4>
+                    <p><?php esc_html_e('Visitors tap the nose, lips, teeth or abdomen on a body map, or answer two or three questions, to see matching cases.', 'medical-before-after-gallery'); ?></p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="dashicons dashicons-camera"></span>
+                    </div>
+                    <h4><?php esc_html_e('Ghost Camera & Reels', 'medical-before-after-gallery'); ?></h4>
+                    <p><?php esc_html_e('Take the after photo with the before photo as a ghost guide, line up pairs, and export a short before-and-after video for social media.', 'medical-before-after-gallery'); ?></p>
+                </div>
+
                 <div class="feature-card">
                     <div class="feature-icon">
                         <span class="dashicons dashicons-grid-view"></span>
