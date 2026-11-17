@@ -4,52 +4,55 @@ Tags: before-after, medical, gallery, comparison, healthcare
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://buymeacoffee.com/wpplugindev
 
-A simple before-after image gallery plugin designed for medical professionals and healthcare practices.
+Before and after photo galleries for clinics: comparison slider, categories, hover-reveal cards and doctor cards. Built for medical practices.
 
 == Description ==
 
-Showcase patient transformations with a clean before/after case gallery. Built for cosmetic surgery, dermatology, dental, and aesthetic clinics.
+Showcase real patient results with a clean, fast before-and-after case gallery. Built for cosmetic surgery, dermatology, dental, hair restoration and aesthetic clinics.
 
-== Free vs Pro Features ==
-Free Features:
-- Basic Before-After Gallery
-- Category Filtering
-- Image Cropping
-- Responsive Design
-- Before-After View Switching
-- Modal Case Navigation
-- Category Navigation
+Add your cases, pick a category for each, and put `[medbeafgallery]` on any page. Visitors browse by category and open each case in a case window with a draggable before/after slider.
 
-Pro Features:
-- All Free features
-- Sub Category Support
-- Multiple Before-After Pairs
-- Advanced Filtering (Age, Gender, Procedure)
-- Watermarking Capabilities
-- Additional Images Carousel
-- Sensitive Content Warning
-- Detailed Before-After Case Information
-- Premium Support
+= Free features =
+
+* **Comparison slider** — drag to compare, or switch to before-only and after-only views
+* **Hover-reveal cards** (optional) — each card shows the before photo and wipes to the after photo on hover, a press-and-hold on phones, and once by itself as it scrolls into view
+* **Blurred photo background** — the case window fills the space around a photo with a soft, blurred copy instead of black bars
+* **Doctor cards** — say who treated each case, with photo, credentials and location
+* **Categories with images** — a scrollable category bar, parent and subcategories
+* **Multiple cases in one window** — move between cases without closing the window
+* **Image cropping** — crop before and after photos to the same size on upload so they line up
+* **Custom colours** — solid colours or gradients to match your brand
+* **Mobile first** — cards, slider and case window work with touch, at any screen width
+* **Accessible** — keyboard navigation, screen-reader labels, focus management, "reduce motion" respected
+* **Shortcode options** — `[medbeafgallery items_per_page="9" default_category="face" card_style="reveal" show_filters="false"]`
+* Up to 12 cases and 4 categories
+
+= Pro add-on =
+
+The optional [Pro add-on](https://medicalbeforeaftergallery.com/) adds:
+
+* Unlimited cases and categories, multiple photo pairs (angles) per case
+* Case filters (age, gender, procedure and your own), search, sort, filter by doctor, shareable links
+* Masonry layout plus Spotlight, Procedure rows, Editorial and Uncropped layouts, style presets, slider and photo cards
+* Case-window styles: Cinema, Drawer, Comparison desk with a linked magnifier, Case story, and a swipeable story mode on phones
+* Progress timeline with real, dated photos (6 weeks, 3 months, 1 year…)
+* "Find by area" body and face map, and "Help me choose" guided search
+* Ghost camera for matching after photos, a photo line-up tool, and transformation reels for social media
+* Watermarks that never touch your original photos, a sensitive-content notice, annotations with a "What to notice" tour
+* Live design preview, a setup wizard and a ready-to-publish checklist
+* AI write-ups and alt text through WordPress 7's AI connection, using your own provider key
 
 **Free Demo:** [View Free Demo](https://demo.medicalbeforeaftergallery.com/free/)
 
 **Pro Demo:** [View Pro Demo](https://demo.medicalbeforeaftergallery.com/)
 
-**Key Features:**
+**Perfect for:**
 
-* **Interactive Image Comparison** – Smooth drag slider for before/after reveals
-* **Category Management** – Organize cases by treatment types
-* **Mobile Responsive** – Optimized for all devices
-* **Professional Layouts** – Grid and masonry layouts
-* **Custom Color Theming** – Match your brand colors
-* **Multiple View Modes** – Split view, before-only, after-only options
-
-**Perfect For:**
 * Plastic Surgery Clinics
 * Dermatology Practices
 * Dental Offices
@@ -59,32 +62,48 @@ Pro Features:
 
 == Installation ==
 
-1. Upload the plugin files to `/wp-content/plugins/medical-before-after-gallery/`
+1. Upload the plugin files to `/wp-content/plugins/medical-before-after-gallery/`, or install it from the Plugins screen
 2. Activate the plugin through the 'Plugins' screen in WordPress
-3. Go to Medical Before After Gallery in your admin dashboard to configure settings
-4. Create your first case study
-5. Add the shortcode [medbeafgallery] to any page or post
+3. Go to Medical Before After Gallery in your admin dashboard to choose your settings
+4. Add your categories and your first case (and, optionally, your doctors)
+5. Add the shortcode `[medbeafgallery]` to any page or post
 
 == Frequently Asked Questions ==
 
 = Can I customize the colors? =
-Yes! You can set custom colors for the gallery interface.
+Yes. Pick a solid colour or a gradient under Design in the gallery settings.
 
 = Does it work on mobile devices? =
-Absolutely! The gallery is fully responsive and optimized for touch devices.
+Yes. Cards, the comparison slider and the case window are built for touch screens, and the hover-reveal cards use a press-and-hold on phones.
 
-= Can I customize the gallery appearance? =
-Yes, the plugin includes various layout options and customization settings.
+= Are my original photos changed? =
+No. Cropping saves a new copy, and the Pro add-on's watermarks are separate copies too.
+
+= What happens to my cases if I delete the plugin? =
+They are kept, unless you tick "Also delete all cases, categories and their images" under Data & Uninstall first.
 
 == Screenshots ==
 
-1. Gallery grid view
-2. Interactive before/after slider in modal
-3. Admin dashboard
-4. Mobile responsive design
-5. Category management interface
+1. Gallery with hover-reveal cards: each card wipes from the before photo to the after photo
+2. The case window: comparison slider, blurred photo background and the doctor who treated the case
+3. On a phone: the gallery and the case window
+4. Adding a case: before and after photos and the doctor
+5. Gallery settings: card style, case-window background and colours
+6. Doctors: photo, credentials and location for each doctor
 
 == Changelog ==
+
+= 1.5.0 =
+* Added: "Hover reveal" card style (optional): the before photo wipes to the after photo on hover, keyboard focus or a press-and-hold, and plays once as each card scrolls into view (never for visitors who ask for reduced motion)
+* Added: a blurred copy of the photo fills the case window instead of black bars (Design → Case Window Background)
+* Added: doctors — Gallery → Doctors with photo, credentials, location and profile link; choose the doctor in each case; a doctor card in the case window
+* Added: shortcode options `card_style` and a working `show_filters="false"`
+* Fixed: the `items_per_page` and `default_category` shortcode options were ignored
+* Fixed: on phones the close button covered the end of a long case title
+* Fixed: the dashboard's "Total Images" count missed every additional photo pair
+* Removed: the consultation-button settings, which never showed a button in the free plugin (the booking button is part of the Pro add-on)
+* Changed: the dashboard and case editor no longer show locked copies of Pro settings; one short card lists what the Pro add-on adds
+* Changed: the Pro Features page quotes real WordPress.org reviews
 
 = 1.4.0 =
 * Fixed: category tiles showing no icon (their SVG icons were being stripped)
