@@ -125,8 +125,13 @@ document.addEventListener("DOMContentLoaded", function() {
     const galleryGrid = document.getElementById('medbeafgallery-gallery-grid');
     if (galleryGrid) galleryGrid.style.display = 'none';
 
-    // Get configuration from the container
-    const galleryContainer = document.querySelector('.medbeafgallery-container');
+    // Get configuration from the container. The data-category / data-per-page
+    // attributes (the shortcode's default_category and items_per_page) live on
+    // the inner .medbeafgallery-gallery-container; this used to query the outer
+    // .medbeafgallery-container, which has neither, so both attributes were
+    // silently ignored (6 per page, starting on "All", whatever was set).
+    const galleryContainer = document.querySelector('.medbeafgallery-gallery-container[data-per-page]')
+        || document.querySelector('.medbeafgallery-container');
     if (galleryContainer) {
         if (galleryContainer.dataset.category) {
             galleryConfig.currentCategory = galleryContainer.dataset.category;

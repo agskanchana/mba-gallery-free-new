@@ -96,7 +96,7 @@ function medbeafgallery_shortcode($atts) {
             <!-- Category Carousel - now populated by PHP -->
             <?php
             if ($show_filters) {
-                echo wp_kses(medbeafgallery_render_category_carousel('carousel'), medbeafgallery_allowed_svg_html());
+                echo wp_kses(medbeafgallery_render_category_carousel('carousel', $atts['default_category']), medbeafgallery_allowed_svg_html());
             }
             ?>
 
@@ -354,13 +354,16 @@ function medbeafgallery_get_current_shortcode_atts() {
 /**
  * Render the category carousel
  */
-function medbeafgallery_render_category_carousel($display_mode = 'grid') {
+function medbeafgallery_render_category_carousel($display_mode = 'grid', $default_category = null) {
     // Use the existing function from utilities.php to get categories
     $categories = medbeafgallery_get_categories_with_images();
 
-    // Get default category from config or use 'all' as default
-    $gallery_config = get_option('medbeafgallery_settings', array());
-    $default_category = isset($gallery_config['default_category']) ? $gallery_config['default_category'] : 'all';
+    // The tile to highlight: the shortcode's default_category when given (so it
+    // matches the category gallery.js starts on), else the saved setting, else 'all'.
+    if ($default_category === null || $default_category === '') {
+        $gallery_config = get_option('medbeafgallery_settings', array());
+        $default_category = isset($gallery_config['default_category']) ? $gallery_config['default_category'] : 'all';
+    }
 
     // Filter for PARENT categories only
     $processed_categories = array();
