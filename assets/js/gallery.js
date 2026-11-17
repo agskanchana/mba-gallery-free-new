@@ -776,6 +776,16 @@ function createGalleryItem(item) {
 
     galleryItem.setAttribute('role', 'listitem');
 
+    // Design → Card Style "Hover reveal": a Before/After chip that follows the wipe.
+    const cfg = (typeof medbeafgalleryGalleryConfig !== 'undefined' && medbeafgalleryGalleryConfig) || {};
+    const revealCards = cfg.cardStyle === 'reveal' && !!beforeSrc && !!afterSrc;
+    const stateChip = revealCards
+        ? `<span class="medbeafgallery-card-state" aria-hidden="true"><span class="medbeafgallery-card-state-before">${medbeafgalleryEscapeAttr(cfg.beforeLabel || cfg.beforeText || 'Before')}</span><span class="medbeafgallery-card-state-after">${medbeafgalleryEscapeAttr(cfg.afterLabel || cfg.afterText || 'After')}</span></span>`
+        : '';
+    if (revealCards) {
+        galleryItem.classList.add('medbeafgallery-reveal-card');
+    }
+
     // Create the gallery item HTML
     galleryItem.innerHTML = `
         <div class="medbeafgallery-gallery-image-container">
@@ -784,6 +794,7 @@ function createGalleryItem(item) {
                 ${beforeTag}
                 <div class="medbeafgallery-preview-divider" aria-hidden="true"></div>
                 ${afterTag}
+                ${stateChip}
             </div>
             <button type="button" class="medbeafgallery-gallery-view-btn" data-id="${item.id}" aria-label="View details for ${safeTitle}">
                 <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -799,6 +810,11 @@ function createGalleryItem(item) {
 
         </div>
     `;
+
+    if (revealCards) {
+        medbeafgalleryInitRevealCard(galleryItem, item.id);
+    }
+    // (medbeafgalleryInitRevealCard and the one-time wipe are defined after this function.)
 
     // Add click event listener to the view button
     const viewBtn = galleryItem.querySelector('.medbeafgallery-gallery-view-btn');
@@ -816,6 +832,89 @@ function createGalleryItem(item) {
     });
 
     return galleryItem;
+}
+
+/* ── Hover-reveal cards (Design → Card Style) ─────────────────────────────────
+   The card shows the before photo; the after photo wipes in on hover or
+   keyboard focus (CSS), on a press-and-hold on touch screens (here), and once
+   by itself the first time each case's card scrolls into view. Visitors who
+   ask for reduced motion get no automatic wipe.
+   ────────────────────────────────────────────────────────────────────────── */
+
+const medbeafgalleryPeekedIds = new Set();
+let medbeafgalleryPeekObserver = null;
+
+function medbeafgalleryInitRevealCard(card, caseId) {
+    const area = card.querySelector('.medbeafgallery-gallery-image-container');
+    if (!area) return;
+
+    // Touch: press and hold to see the after photo; a quick tap still opens the case.
+    let holdTimer = null;
+    let held = false;
+    const endHold = () => {
+        clearTimeout(holdTimer);
+        holdTimer = null;
+        if (held) card.classList.remove('is-revealed');
+    };
+    area.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse') return;
+        held = false;
+        clearTimeout(holdTimer);
+        holdTimer = setTimeout(() => {
+            held = true;
+            card.classList.add('is-revealed');
+        }, 280);
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((type) => area.addEventListener(type, endHold));
+    area.addEventListener('contextmenu', (e) => {
+        if (holdTimer || held) e.preventDefault();
+    });
+    // The click that ends a hold must not open the case.
+    card.addEventListener('click', (e) => {
+        if (held) {
+            held = false;
+            e.stopImmediatePropagation();
+            e.preventDefault();
+        }
+    }, true);
+
+    medbeafgalleryObservePeek(card, caseId);
+}
+
+function medbeafgalleryObservePeek(card, caseId) {
+    if (!('IntersectionObserver' in window)) return;
+    if (medbeafgalleryPeekedIds.has(String(caseId))) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    if (!medbeafgalleryPeekObserver) {
+        medbeafgalleryPeekObserver = new IntersectionObserver((entries) => {
+            let order = 0;
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                medbeafgalleryPeekObserver.unobserve(entry.target);
+                const el = entry.target.closest('.medbeafgallery-gallery-item') || entry.target;
+                const id = el.dataset.id;
+                if (medbeafgalleryPeekedIds.has(id)) return;
+                medbeafgalleryPeekedIds.add(id);
+
+                const delay = 300 + (order++) * 180;
+                const play = () => setTimeout(() => {
+                    if (!el.isConnected || el.matches(':hover')) return;
+                    el.classList.add('is-peeking');
+                    setTimeout(() => el.classList.remove('is-peeking'), 2200);
+                }, delay);
+                const afterImg = el.querySelector('img.medbeafgallery-preview-after');
+                if (afterImg && !afterImg.complete) {
+                    afterImg.addEventListener('load', play, { once: true });
+                } else {
+                    play();
+                }
+            });
+        }, { threshold: 0.5 });
+    }
+    // Watch the photo, not the whole card: with longer card text (Pro) half a
+    // card can be below the fold while its photo is fully in view.
+    medbeafgalleryPeekObserver.observe(card.querySelector('.medbeafgallery-gallery-image-container') || card);
 }
 
 /* ── Modal focus management ──────────────────────────────────────────────────
@@ -1295,6 +1394,12 @@ function showImagePair(item, index) {
     wrapper.innerHTML = '';
     wrapper.classList.add('loading');
 
+    // The blurred backdrop (Design → Case Window Background) is a copy of the
+    // photo itself, so remember both URLs for setViewMode().
+    wrapper.dataset.backdropBefore = pair.beforeImg || '';
+    wrapper.dataset.backdropAfter = pair.afterImg || '';
+    medbeafgallerySetBackdrop(wrapper, pair.afterImg || pair.beforeImg);
+
     // Add loading spinner
     const spinner = document.createElement('div');
     spinner.className = 'medbeafgallery-loading-spinner';
@@ -1378,6 +1483,47 @@ function showImagePair(item, index) {
     if (pairInfoText) {
         pairInfoText.textContent = pair?.description || `View ${index + 1}`;
     }
+}
+
+// The doctor card under the photo in the case window (free modal only — the
+// strip is not printed when Pro's details panel is shown, which has its own).
+function medbeafgalleryRenderDoctorStrip(item) {
+    const strip = document.getElementById('medbeafgallery-doctor-strip');
+    if (!strip) return;
+    const d = item && item.doctor;
+    if (!d || !d.name) {
+        strip.hidden = true;
+        strip.innerHTML = '';
+        return;
+    }
+    const esc = medbeafgalleryEscapeAttr;
+    const photo = d.photo
+        ? `<img class="medbeafgallery-doctor-photo" src="${esc(d.photo)}" alt="" loading="lazy" decoding="async">`
+        : `<span class="medbeafgallery-doctor-photo medbeafgallery-doctor-initials" aria-hidden="true">${esc(String(d.name).replace(/^(dr\.?\s+)/i, '').charAt(0).toUpperCase())}</span>`;
+    const name = d.url
+        ? `<a class="medbeafgallery-doctor-name" href="${esc(d.url)}">${esc(d.name)}</a>`
+        : `<span class="medbeafgallery-doctor-name">${esc(d.name)}</span>`;
+    strip.innerHTML = `
+        ${photo}
+        <div class="medbeafgallery-doctor-text">
+            <span class="medbeafgallery-doctor-label">${esc((typeof medbeafgalleryGalleryConfig !== 'undefined' && medbeafgalleryGalleryConfig.treatedByText) || 'Treated by')}</span>
+            ${name}
+            ${d.credentials ? `<span class="medbeafgallery-doctor-credentials">${esc(d.credentials)}</span>` : ''}
+            ${d.location ? `<span class="medbeafgallery-doctor-location">${esc(d.location)}</span>` : ''}
+        </div>`;
+    strip.hidden = false;
+}
+
+// Point the case window's blurred backdrop at a photo (CSS custom property read
+// by .medbeafgallery-backdrop-blur .medbeafgallery-before-after-wrapper::before).
+function medbeafgallerySetBackdrop(el, url) {
+    if (!el) return;
+    if (!url) {
+        el.style.removeProperty('--medbeafgallery-backdrop');
+        return;
+    }
+    const safe = String(url).replace(/[\r\n]/g, '').replace(/"/g, '%22').replace(/\\/g, '%5C');
+    el.style.setProperty('--medbeafgallery-backdrop', 'url("' + safe + '")');
 }
 
 // Create a new image pair wrapper (also needed globally)
@@ -1497,6 +1643,13 @@ function setViewMode(mode) {
     splitViewBtn?.classList.toggle('active', mode === 'split');
     beforeViewBtn?.classList.toggle('active', mode === 'before');
     afterViewBtn?.classList.toggle('active', mode === 'after');
+
+    // Keep the blurred backdrop in step with the photo on show.
+    if (wrapper.dataset.backdropAfter || wrapper.dataset.backdropBefore) {
+        medbeafgallerySetBackdrop(wrapper, mode === 'before'
+            ? (wrapper.dataset.backdropBefore || wrapper.dataset.backdropAfter)
+            : (wrapper.dataset.backdropAfter || wrapper.dataset.backdropBefore));
+    }
 
     // Update visibility based on view mode
     if (mode === 'split') {
@@ -1655,6 +1808,8 @@ function openModal(id) {
     if (caseTitle) caseTitle.textContent = medbeafgalleryDecodeEntities(item.title) || 'Case Study';
     if (caseDesc) caseDesc.innerHTML = item.description || '';
     if (caseCategory) caseCategory.textContent = medbeafgalleryDecodeEntities(item.categoryName || item.category) || 'Uncategorized';
+
+    medbeafgalleryRenderDoctorStrip(item);
 
     if (caseGender && item.gender) caseGender.textContent = capitalizeSentence(item.gender);
     if (caseAge && item.age) caseAge.textContent = item.age;

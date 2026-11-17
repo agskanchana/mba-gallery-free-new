@@ -164,7 +164,7 @@ function medbeafgallery_uninstall_site_cleanup() {
         }
 
         // Remove custom taxonomy terms
-        $taxonomies = array('medbeafgallery_category');
+        $taxonomies = array('medbeafgallery_category', 'medbeafgallery_doctor');
 
         foreach ($taxonomies as $taxonomy) {
             $terms = get_terms(array(
@@ -496,6 +496,7 @@ add_action('admin_notices', 'medbeafgallery_admin_health_notice');
 // Include required files
 require_once MEDBEAFGALLERY_PATH . 'includes/utilities.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/post-types.php';
+require_once MEDBEAFGALLERY_PATH . 'includes/doctors.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/shortcodes.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/admin-functions.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/rest.php';

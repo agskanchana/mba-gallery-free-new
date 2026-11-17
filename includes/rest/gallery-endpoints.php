@@ -456,6 +456,10 @@ function medbeafgallery_format_case_data($post_id) {
         'description' => $rendered_content,
         'content' => $rendered_content,
         'procedureInfo' => apply_filters('the_content', $procedure_info),
+        // Who treated the case (includes/doctors.php). Additive: 'doctor' is the
+        // first (normally only) one, or null; 'doctors' lists them all.
+        'doctor' => null,
+        'doctors' => array(),
         // No 'permalink' key: the case post type is registered with
         // publicly_queryable => false, so get_permalink() only ever produced a
         // URL that 404s. Nothing consumed it.
@@ -465,6 +469,12 @@ function medbeafgallery_format_case_data($post_id) {
     if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
         $debug_message = 'Final case data for ' . $post_id . ': imagePairs count = ' . count($image_pairs);
         call_user_func('error_log', $debug_message);
+    }
+
+    if (function_exists('medbeafgallery_get_case_doctors')) {
+        $doctors = medbeafgallery_get_case_doctors($post_id);
+        $case_data['doctors'] = $doctors;
+        $case_data['doctor'] = $doctors ? $doctors[0] : null;
     }
 
     return $case_data;

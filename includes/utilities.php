@@ -343,7 +343,13 @@ class MedBeAfGallerySettings {
         'delete_data_on_uninstall' => false,
         // Off by default: turning this on changes the case numbers visitors see
         // on parent category tiles.
-        'rollup_subcategory_counts' => false
+        'rollup_subcategory_counts' => false,
+        // 'split' = before and after halves side by side (unchanged look);
+        // 'reveal' = the before photo, wiping to the after photo on hover/hold.
+        'card_style' => 'split',
+        // What fills the case window around a photo that does not fill it:
+        // 'blur' = a blurred, darkened copy of the photo; 'plain' = black.
+        'photo_backdrop' => 'blur'
     );
 
     /**

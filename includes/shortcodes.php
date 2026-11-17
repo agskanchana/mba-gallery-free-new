@@ -33,6 +33,10 @@ function medbeafgallery_shortcode($atts) {
     $atts = shortcode_atts($default_atts, $atts, 'medbeafgallery');
     $show_filters = !in_array(strtolower((string) $atts['show_filters']), array('false', '0', 'no', 'off'), true);
 
+    $settings       = medbeafgallery_get_settings();
+    $card_style     = (isset($settings['card_style']) && $settings['card_style'] === 'reveal') ? 'reveal' : 'split';
+    $photo_backdrop = (isset($settings['photo_backdrop']) && $settings['photo_backdrop'] === 'plain') ? 'plain' : 'blur';
+
     // Enqueue necessary scripts and styles - optimized loading
     wp_enqueue_style('medbeafgallery-css', MEDBEAFGALLERY_URL . 'assets/css/gallery.css', array(), MEDBEAFGALLERY_VERSION);
     wp_enqueue_script('cocoen-js', MEDBEAFGALLERY_URL . 'assets/vendor/cocoen/cocoen.min.js', array(), '3.2.0', true);
@@ -51,6 +55,11 @@ function medbeafgallery_shortcode($atts) {
         'itemsPerPage' => intval($atts['items_per_page']),
         'defaultCategory' => esc_attr($atts['default_category']),
         'showFilters' => $show_filters ? 'true' : 'false',
+        'cardStyle' => $card_style,
+        'photoBackdrop' => $photo_backdrop,
+        'beforeText' => __('Before', 'medical-before-after-gallery'),
+        'afterText' => __('After', 'medical-before-after-gallery'),
+        'treatedByText' => __('Treated by', 'medical-before-after-gallery'),
         'categoryDisplayMode' => 'carousel',
         'galleryEndpoint' => 'gallery-data',
         'categoriesEndpoint' => 'categories',
@@ -75,7 +84,7 @@ function medbeafgallery_shortcode($atts) {
     ob_start();
 
     ?>
-    <div class="medbeafgallery-container<?php echo $show_filters ? '' : ' medbeafgallery-no-filters'; ?>" id="medbeafgallery-gallery-container">
+    <div class="medbeafgallery-container<?php echo $show_filters ? '' : ' medbeafgallery-no-filters'; ?><?php echo $card_style === 'reveal' ? ' medbeafgallery-cards-reveal' : ''; ?>" id="medbeafgallery-gallery-container">
         <!-- Gallery content -->
         <div class="medbeafgallery-gallery-content" id="medbeafgallery-gallery-content">
             <!-- Category Carousel - now populated by PHP -->
@@ -153,7 +162,7 @@ function medbeafgallery_shortcode($atts) {
     </div>
 
     <!-- Modal for enlarged view -->
-    <div id="medbeafgallery-modal" class="medbeafgallery-modal" role="dialog" aria-modal="true" aria-labelledby="medbeafgallery-case-title" aria-hidden="true" tabindex="-1">
+    <div id="medbeafgallery-modal" class="medbeafgallery-modal<?php echo $photo_backdrop === 'blur' ? ' medbeafgallery-backdrop-blur' : ''; ?>" role="dialog" aria-modal="true" aria-labelledby="medbeafgallery-case-title" aria-hidden="true" tabindex="-1">
         <div class="medbeafgallery-modal-content">
             <div class="medbeafgallery-modal-header">
                 <h2 id="medbeafgallery-case-title">Case Study Title</h2>
@@ -266,6 +275,9 @@ function medbeafgallery_shortcode($atts) {
                         </div>
                     </div>
                 </div>
+                <?php else : ?>
+                <!-- Doctor who treated the case (filled by gallery.js; Pro shows it in its details panel instead) -->
+                <div class="medbeafgallery-doctor-strip" id="medbeafgallery-doctor-strip" hidden></div>
                 <?php endif; ?>
             </div>
 

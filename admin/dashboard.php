@@ -165,6 +165,12 @@ function medbeafgallery_process_settings() {
         // Count subcategory cases toward the parent category's displayed total.
         $settings['rollup_subcategory_counts'] = isset($_POST['rollup_subcategory_counts']);
 
+        // Card style and case-window background (unknown values fall back to the defaults).
+        $card_style = isset($_POST['card_style']) ? sanitize_key(wp_unslash($_POST['card_style'])) : 'split';
+        $settings['card_style'] = in_array($card_style, array('split', 'reveal'), true) ? $card_style : 'split';
+        $photo_backdrop = isset($_POST['photo_backdrop']) ? sanitize_key(wp_unslash($_POST['photo_backdrop'])) : 'blur';
+        $settings['photo_backdrop'] = in_array($photo_backdrop, array('blur', 'plain'), true) ? $photo_backdrop : 'blur';
+
         // Destructive-uninstall opt-in. Stays false unless the owner ticks it.
         $settings['delete_data_on_uninstall'] = isset($_POST['delete_data_on_uninstall']);
 
@@ -323,6 +329,26 @@ function medbeafgallery_display_settings_form_main($settings) {
                     </td>
                 </tr>
                 <?php /* Category Display setting removed — the gallery always uses "Carousel with Navigation". */ ?>
+                <tr>
+                    <th scope="row"><label for="card_style"><?php esc_html_e('Card Style', 'medical-before-after-gallery'); ?></label></th>
+                    <td>
+                        <select name="card_style" id="card_style">
+                            <option value="split" <?php selected($settings['card_style'] ?? 'split', 'split'); ?>><?php esc_html_e('Side by side — before and after halves', 'medical-before-after-gallery'); ?></option>
+                            <option value="reveal" <?php selected($settings['card_style'] ?? 'split', 'reveal'); ?>><?php esc_html_e('Hover reveal — the before photo wipes to the after photo', 'medical-before-after-gallery'); ?></option>
+                        </select>
+                        <p class="description"><?php esc_html_e('Hover reveal shows each card\'s full before photo. Pointing at a card (or pressing and holding it on a phone) wipes to the after photo, and every card plays the wipe once when it first scrolls into view. Visitors who ask their device for reduced motion see no animation. Applies to the classic grid layout.', 'medical-before-after-gallery'); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="photo_backdrop"><?php esc_html_e('Case Window Background', 'medical-before-after-gallery'); ?></label></th>
+                    <td>
+                        <select name="photo_backdrop" id="photo_backdrop">
+                            <option value="blur" <?php selected($settings['photo_backdrop'] ?? 'blur', 'blur'); ?>><?php esc_html_e('Blurred copy of the photo', 'medical-before-after-gallery'); ?></option>
+                            <option value="plain" <?php selected($settings['photo_backdrop'] ?? 'blur', 'plain'); ?>><?php esc_html_e('Plain black', 'medical-before-after-gallery'); ?></option>
+                        </select>
+                        <p class="description"><?php esc_html_e('What fills the space around a photo that does not fill the case window, instead of black bars.', 'medical-before-after-gallery'); ?></p>
+                    </td>
+                </tr>
                 <tr>
                     <th scope="row"><?php esc_html_e('Category Counts', 'medical-before-after-gallery'); ?></th>
                     <td>

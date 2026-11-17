@@ -81,6 +81,40 @@ function medbeafgallery_register_post_types() {
             'public'            => false, // Add this line
         )
     );
+
+    // Doctors (or other providers) who treated a case. Term name = the person's
+    // name; photo, credentials, location and profile link live in term meta
+    // (includes/doctors.php). Registered here so uninstall can find the terms.
+    register_taxonomy(
+        'medbeafgallery_doctor',
+        'medbeafgallery_case',
+        array(
+            'labels' => array(
+                'name'          => _x('Doctors', 'taxonomy general name', 'medical-before-after-gallery'),
+                'singular_name' => _x('Doctor', 'taxonomy singular name', 'medical-before-after-gallery'),
+                'search_items'  => __('Search Doctors', 'medical-before-after-gallery'),
+                'all_items'     => __('All Doctors', 'medical-before-after-gallery'),
+                'edit_item'     => __('Edit Doctor', 'medical-before-after-gallery'),
+                'update_item'   => __('Update Doctor', 'medical-before-after-gallery'),
+                'add_new_item'  => __('Add New Doctor', 'medical-before-after-gallery'),
+                'new_item_name' => __('Doctor Name', 'medical-before-after-gallery'),
+                'not_found'     => __('No doctors found.', 'medical-before-after-gallery'),
+                'back_to_items' => __('&larr; Back to Doctors', 'medical-before-after-gallery'),
+                'menu_name'     => __('Doctors', 'medical-before-after-gallery'),
+            ),
+            'description'       => __('Doctors or other providers shown with their cases.', 'medical-before-after-gallery'),
+            'hierarchical'      => false,
+            'public'            => false,
+            'show_ui'           => true,
+            'show_in_menu'      => false, // Listed under the gallery menu instead.
+            'show_admin_column' => true,
+            'show_in_quick_edit'=> false,
+            'meta_box_cb'       => false, // Replaced by a single-choice box (includes/doctors.php).
+            'query_var'         => false,
+            'rewrite'           => false,
+            'show_in_rest'      => false,
+        )
+    );
 }
 add_action('init', 'medbeafgallery_register_post_types');
 
