@@ -23,13 +23,14 @@ Add your cases, pick a category for each, and put `[medbeafgallery]` on any page
 * **Hover-reveal cards** (optional) — each card shows the before photo and wipes to the after photo on hover, a press-and-hold on phones, and once by itself as it scrolls into view
 * **Blurred photo background** — the case window fills the space around a photo with a soft, blurred copy instead of black bars
 * **Doctor cards** — say who treated each case, with photo, credentials and location
-* **Categories with images** — a scrollable category bar, parent and subcategories
+* **Four category styles** — image carousel, image grid, compact buttons or a drop-down menu, with parent and subcategories
+* **Simple category manager** — add, rename, nest and drag categories into the order you want, with a tile image for each
 * **Multiple cases in one window** — move between cases without closing the window
 * **Image cropping** — crop before and after photos to the same size on upload so they line up
 * **Custom colours** — solid colours or gradients to match your brand
 * **Mobile first** — cards, slider and case window work with touch, at any screen width
 * **Accessible** — keyboard navigation, screen-reader labels, focus management, "reduce motion" respected
-* **Shortcode options** — `[medbeafgallery items_per_page="9" default_category="face" card_style="reveal" show_filters="false"]`
+* **Shortcode options** — `[medbeafgallery items_per_page="9" default_category="face" category_style="buttons" card_style="reveal" show_filters="false"]`
 * Up to 12 cases and 4 categories
 
 = Pro add-on =
@@ -40,6 +41,8 @@ The optional [Pro add-on](https://medicalbeforeaftergallery.com/) adds:
 * Case filters (age, gender, procedure and your own), search, sort, filter by doctor, shareable links
 * Masonry layout plus Spotlight, Procedure rows, Editorial and Uncropped layouts, style presets, slider and photo cards
 * Case-window styles: Cinema, Drawer, Comparison desk with a linked magnifier, Case story, and a swipeable story mode on phones
+* Two more category styles: text tabs, and photo tiles showing a real result and the case count for each category
+* Single-case embed for procedure pages and blog posts, in side-by-side, stacked or compact card layouts
 * Progress timeline with real, dated photos (6 weeks, 3 months, 1 year…)
 * "Find by area" body and face map, and "Help me choose" guided search
 * Ghost camera for matching after photos, a photo line-up tool, and transformation reels for social media
@@ -85,11 +88,12 @@ They are kept, unless you tick "Also delete all cases, categories and their imag
 == Screenshots ==
 
 1. Gallery with hover-reveal cards: each card wipes from the before photo to the after photo
-2. The case window: comparison slider, blurred photo background and the doctor who treated the case
+2. The case window: Slider, Before and After views, a blurred photo background and the doctor who treated the case
 3. On a phone: the gallery and the case window
 4. Adding a case: before and after photos and the doctor
-5. Gallery settings: card style, case-window background and colours
+5. Gallery settings: colours, category style, card style and case-window background
 6. Doctors: photo, credentials and location for each doctor
+7. Categories: add, rename, nest and drag into order, with a tile image for each
 
 == Changelog ==
 
@@ -98,6 +102,9 @@ They are kept, unless you tick "Also delete all cases, categories and their imag
 * Added: a blurred copy of the photo fills the case window instead of black bars (Design → Case Window Background)
 * Added: doctors — Gallery → Doctors with photo, credentials, location and profile link; choose the doctor in each case; a doctor card in the case window
 * Added: shortcode options `card_style` and a working `show_filters="false"`
+* Added: category styles — Design → Category Navigation: carousel, grid, buttons or a drop-down menu (also per gallery with `category_style`)
+* Added: a simpler Categories screen — add, rename, nest, reorder by drag and drop (or Move up / Move down), choose tile images, delete with a clear warning; the gallery follows your order. WordPress's standard screen stays one click away
+* Improved: the case window's view buttons are labelled (Slider, Before, After), and the doctor card sits under the photo on wide screens
 * Fixed: the `items_per_page` and `default_category` shortcode options were ignored
 * Fixed: on phones the close button covered the end of a long case title
 * Fixed: the dashboard's "Total Images" count missed every additional photo pair
@@ -138,6 +145,9 @@ They are kept, unless you tick "Also delete all cases, categories and their imag
 * Optimized image loading performance
 
 == Upgrade Notice ==
+
+= 1.5.0 =
+Adds four category styles, a simpler Categories screen, hover-reveal cards, doctors and a blurred case-window background, and fixes the ignored items_per_page and default_category shortcode options. Works with every Pro add-on version.
 
 = 1.4.0 =
 Fixes blank category tiles and double share popups, loads much lighter thumbnails, improves accessibility, and keeps your cases when the plugin is deleted unless you opt in. Works with every Pro add-on version.
