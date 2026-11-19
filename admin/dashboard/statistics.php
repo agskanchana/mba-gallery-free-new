@@ -96,7 +96,7 @@ function medbeafgallery_display_statistics($stats) {
                     <a href="https://medicalbeforeaftergallery.com/" target="_blank"><?php esc_html_e('Upgrade to Pro', 'medical-before-after-gallery'); ?></a>
                 </p>
             <?php endif; ?>
-            <a href="<?php echo esc_url(admin_url('edit.php?post_type=medbeafgallery_case')); ?>" class="medbeafgallery-stat-link">
+            <a href="<?php echo esc_url(function_exists('medbeafgallery_cs_url') ? medbeafgallery_cs_url() : admin_url('edit.php?post_type=medbeafgallery_case')); ?>" class="medbeafgallery-stat-link">
                 <?php esc_html_e('View All', 'medical-before-after-gallery'); ?> →
             </a>
         </div>

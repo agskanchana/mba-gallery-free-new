@@ -241,6 +241,29 @@ define('MEDBEAFGALLERY_URL', plugin_dir_url(__FILE__));
 define('MEDBEAFGALLERY_BASENAME', plugin_basename(__FILE__));
 
 /**
+ * Adds each file's modification time to the version of this plugin's own
+ * scripts and styles, so browsers do not keep running a cached copy after an
+ * update. Only URLs under this plugin are touched.
+ */
+function medbeafgallery_asset_cache_buster($src) {
+    if (!is_string($src) || '' === $src || 0 !== strpos($src, MEDBEAFGALLERY_URL)) {
+        return $src;
+    }
+    $parts    = explode('?', $src, 2);
+    $relative = substr($parts[0], strlen(MEDBEAFGALLERY_URL));
+    if ('' === $relative || false !== strpos($relative, '..')) {
+        return $src;
+    }
+    $file = MEDBEAFGALLERY_PATH . $relative;
+    if (!is_file($file)) {
+        return $src;
+    }
+    return add_query_arg('ver', MEDBEAFGALLERY_VERSION . '.' . filemtime($file), $src);
+}
+add_filter('script_loader_src', 'medbeafgallery_asset_cache_buster');
+add_filter('style_loader_src', 'medbeafgallery_asset_cache_buster');
+
+/**
  * Database version check and upgrade
  */
 function medbeafgallery_check_db_version() {
@@ -508,6 +531,10 @@ if (is_admin()) {
     require_once MEDBEAFGALLERY_PATH . 'admin/metaboxes.php';
     // The Categories screen (also serves its admin-ajax actions).
     require_once MEDBEAFGALLERY_PATH . 'admin/categories-manager.php';
+    // The Doctors and Cases screens (with their admin-ajax actions) and the case editor layout.
+    require_once MEDBEAFGALLERY_PATH . 'admin/doctors-manager.php';
+    require_once MEDBEAFGALLERY_PATH . 'admin/cases-manager.php';
+    require_once MEDBEAFGALLERY_PATH . 'admin/case-editor.php';
 }
 
 // Call this on plugin activation

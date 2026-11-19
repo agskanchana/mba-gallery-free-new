@@ -104,6 +104,10 @@ They are kept, unless you tick "Also delete all cases, categories and their imag
 * Added: shortcode options `card_style` and a working `show_filters="false"`
 * Added: category styles — Design → Category Navigation: carousel, grid, buttons or a drop-down menu (also per gallery with `category_style`)
 * Added: a simpler Categories screen — add, rename, nest, reorder by drag and drop (or Move up / Move down), choose tile images, delete with a clear warning; the gallery follows your order. WordPress's standard screen stays one click away
+* Added: a Doctors screen laid out as a staff directory — photo or initials, credentials, location and case count on each card; add and edit in a side panel, delete with a clear warning, drag to reorder
+* Added: a Cases screen — photo cards (or a compact list) with status, categories, doctor and photo-pair count; search, filter by status, category or doctor, sort; publish, unpublish, trash, restore and delete one case or several at once. WordPress's standard list stays one click away
+* Improved: the case editor reads like a guided form — a header with a Title · Photos · Category · Details · Publish checklist that ticks itself, Save and Publish always in reach, the photos first, and the case details as a tidy grid
+* Improved: browsers load the new scripts and styles straight after an update (each file's version follows its last change)
 * Improved: the case window's view buttons are labelled (Slider, Before, After), and the doctor card sits under the photo on wide screens
 * Fixed: the `items_per_page` and `default_category` shortcode options were ignored
 * Fixed: on phones the close button covered the end of a long case title
@@ -147,7 +151,7 @@ They are kept, unless you tick "Also delete all cases, categories and their imag
 == Upgrade Notice ==
 
 = 1.5.0 =
-Adds four category styles, a simpler Categories screen, hover-reveal cards, doctors and a blurred case-window background, and fixes the ignored items_per_page and default_category shortcode options. Works with every Pro add-on version.
+Adds four category styles, simpler Categories, Doctors and Cases screens, a guided case editor, hover-reveal cards, doctors and a blurred case-window background, and fixes the ignored items_per_page and default_category shortcode options. Works with every Pro add-on version.
 
 = 1.4.0 =
 Fixes blank category tiles and double share popups, loads much lighter thumbnails, improves accessibility, and keeps your cases when the plugin is deleted unless you opt in. Works with every Pro add-on version.
