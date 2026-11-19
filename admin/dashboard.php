@@ -88,7 +88,7 @@ function medbeafgallery_admin_page() {
                 <a href="<?php echo esc_url(admin_url('post-new.php?post_type=medbeafgallery_case')); ?>" class="button button-primary">
                     <?php esc_html_e('Add New Case', 'medical-before-after-gallery'); ?>
                 </a>
-                <a href="<?php echo esc_url(admin_url('edit-tags.php?taxonomy=medbeafgallery_category&post_type=medbeafgallery_case')); ?>" class="button">
+                <a href="<?php echo esc_url(medbeafgallery_categories_admin_url()); ?>" class="button">
                     <?php esc_html_e('Manage Categories', 'medical-before-after-gallery'); ?>
                 </a>
                 <a href="https://buymeacoffee.com/wpplugindev" target="_blank" class="button medbeafgallery-coffee-button">
@@ -156,8 +156,10 @@ function medbeafgallery_process_settings() {
             // For regular colors, ensure it's a valid hex color
             $settings['gallery_primary_color'] = sanitize_hex_color($gallery_color) ?: '#3498db';
         }
-        // Category Display setting was removed from the UI — always use the carousel-with-navigation layout.
-        $settings['category_display_mode'] = 'carousel';
+        // Category bar style; unknown values (say, a Pro style after Pro was
+        // switched off) fall back to the carousel.
+        $category_mode = isset($_POST['category_display_mode']) ? sanitize_key(wp_unslash($_POST['category_display_mode'])) : 'carousel';
+        $settings['category_display_mode'] = array_key_exists($category_mode, medbeafgallery_category_display_modes()) ? $category_mode : 'carousel';
 
         // Count subcategory cases toward the parent category's displayed total.
         $settings['rollup_subcategory_counts'] = isset($_POST['rollup_subcategory_counts']);
@@ -325,7 +327,24 @@ function medbeafgallery_display_settings_form_main($settings) {
                         </p>
                     </td>
                 </tr>
-                <?php /* Category Display setting removed — the gallery always uses "Carousel with Navigation". */ ?>
+                <tr>
+                    <th scope="row"><label for="category_display_mode"><?php esc_html_e('Category Navigation', 'medical-before-after-gallery'); ?></label></th>
+                    <td>
+                        <?php $current_category_mode = medbeafgallery_get_category_display_mode(); ?>
+                        <select name="category_display_mode" id="category_display_mode">
+                            <?php foreach (medbeafgallery_category_display_modes() as $mode_key => $mode_label) : ?>
+                                <option value="<?php echo esc_attr($mode_key); ?>" <?php selected($current_category_mode, $mode_key); ?>><?php echo esc_html($mode_label); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description"><?php
+                            printf(
+                                /* translators: %s: example shortcode attribute */
+                                esc_html__('How visitors choose a category above the gallery. One gallery can use a different style with %s.', 'medical-before-after-gallery'),
+                                '<code>category_style="buttons"</code>'
+                            );
+                        ?></p>
+                    </td>
+                </tr>
                 <tr>
                     <th scope="row"><label for="card_style"><?php esc_html_e('Card Style', 'medical-before-after-gallery'); ?></label></th>
                     <td>

@@ -275,6 +275,45 @@ function medbeafgalleryHideEmptyCategoryTiles(cases) {
     });
 }
 
+// The category bar's drop-down style. The select drives the same tiles every
+// other style uses (they stay in the page, hidden), so category filtering, the
+// Pro add-on's subcategories and deep links all keep working through one path.
+function medbeafgalleryInitCategorySelects() {
+    document.querySelectorAll('.medbeafgallery-category-select').forEach(select => {
+        if (select.dataset.medbeafgalleryBound) return;
+        select.dataset.medbeafgalleryBound = '1';
+
+        const bar = select.closest('.medbeafgallery-category-carousel');
+        if (!bar) return;
+        const tileFor = slug => Array.from(bar.querySelectorAll('.medbeafgallery-carousel-item[data-id]'))
+            .find(tile => tile.getAttribute('data-id') === slug);
+
+        select.addEventListener('change', () => {
+            const tile = tileFor(select.value);
+            if (tile && !tile.classList.contains('active')) tile.click();
+        });
+
+        const sync = () => {
+            const active = bar.querySelector('.medbeafgallery-carousel-item.active[data-id]');
+            if (active && select.value !== active.getAttribute('data-id')) {
+                select.value = active.getAttribute('data-id');
+            }
+            // Categories none of the loaded cases use are hidden as tiles
+            // (medbeafgalleryHideEmptyCategoryTiles); leave them out here too.
+            Array.from(select.options).forEach(option => {
+                const tile = tileFor(option.value);
+                const empty = !!(tile && tile.style.getPropertyValue('display') === 'none');
+                option.hidden = empty;
+                option.disabled = empty;
+            });
+        };
+
+        // Watches class/style only, so updating the options cannot retrigger it.
+        new MutationObserver(sync).observe(bar, { subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+        sync();
+    });
+}
+
 // Modify the fetchGalleryData function to not recreate the carousel
 
 async function fetchGalleryData() {
@@ -301,6 +340,7 @@ async function fetchGalleryData() {
 
         // DON'T re-create the carousel, just add events to existing elements
         initCarouselInteractions();
+        medbeafgalleryInitCategorySelects();
 
         // Process gallery data
         galleryData = galleryResult.cases.map(item => {

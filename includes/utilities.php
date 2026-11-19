@@ -177,6 +177,8 @@ function medbeafgallery_get_visible_category_terms() {
         return array();
     }
 
+    $terms = medbeafgallery_sort_category_terms($terms);
+
     $settings = medbeafgallery_get_settings();
 
     if (empty($settings['rollup_subcategory_counts'])) {
@@ -200,6 +202,110 @@ function medbeafgallery_get_visible_category_terms() {
     }
 
     return $terms;
+}
+
+/**
+ * Order categories the way the Categories screen arranges them: by the
+ * 'medbeafgallery_order' term meta it saves (0, 1, 2… among siblings), then by
+ * name. Categories nobody has arranged keep the old alphabetical order, after
+ * the arranged ones.
+ *
+ * @param WP_Term[] $terms Terms to sort.
+ * @return WP_Term[] Sorted terms (keys reset).
+ */
+function medbeafgallery_sort_category_terms($terms) {
+    if (!is_array($terms) || count($terms) < 2) {
+        return is_array($terms) ? array_values($terms) : array();
+    }
+
+    $ids = array();
+    foreach ($terms as $term) {
+        if ($term instanceof WP_Term) {
+            $ids[] = (int) $term->term_id;
+        }
+    }
+    if ($ids) {
+        // One query for every term's meta instead of one per term.
+        update_termmeta_cache($ids);
+    }
+
+    $order = function ($term) {
+        $value = get_term_meta($term->term_id, 'medbeafgallery_order', true);
+        return ($value === '' || $value === false || !is_numeric($value)) ? PHP_INT_MAX : (int) $value;
+    };
+
+    usort($terms, function ($a, $b) use ($order) {
+        $oa = $order($a);
+        $ob = $order($b);
+        if ($oa !== $ob) {
+            return $oa < $ob ? -1 : 1;
+        }
+        return strnatcasecmp($a->name, $b->name);
+    });
+
+    return array_values($terms);
+}
+
+/**
+ * Where "Manage categories" links go: the plugin's Categories screen
+ * (admin/categories-manager.php), else WordPress's term screen.
+ *
+ * @return string
+ */
+function medbeafgallery_categories_admin_url() {
+    if (defined('MEDBEAFGALLERY_CATEGORIES_PAGE')) {
+        return admin_url('admin.php?page=' . MEDBEAFGALLERY_CATEGORIES_PAGE);
+    }
+    return admin_url('edit-tags.php?taxonomy=medbeafgallery_category&post_type=medbeafgallery_case');
+}
+
+/**
+ * Category bar styles visitors can see. Free offers four; the Pro add-on adds
+ * its own through the 'medbeafgallery_category_display_modes' filter.
+ *
+ * @return array mode => label
+ */
+function medbeafgallery_category_display_modes() {
+    $modes = array(
+        'carousel' => __('Carousel — image cards in one row that scrolls sideways', 'medical-before-after-gallery'),
+        'grid'     => __('Grid — every category visible as image cards', 'medical-before-after-gallery'),
+        'buttons'  => __('Buttons — compact text buttons that wrap onto several lines', 'medical-before-after-gallery'),
+        'dropdown' => __('Drop-down menu — one compact list, good for many categories', 'medical-before-after-gallery'),
+    );
+
+    $filtered = apply_filters('medbeafgallery_category_display_modes', $modes);
+
+    return is_array($filtered) && !empty($filtered) ? $filtered : $modes;
+}
+
+/**
+ * The category bar style for one gallery: the shortcode's category_style when
+ * it names a known style, else the saved setting, else the carousel.
+ *
+ * @param string $requested Optional shortcode value.
+ * @return string Mode key.
+ */
+function medbeafgallery_get_category_display_mode($requested = '') {
+    $modes = medbeafgallery_category_display_modes();
+    $requested = sanitize_key((string) $requested);
+
+    if ($requested !== '' && isset($modes[$requested])) {
+        $mode = $requested;
+    } else {
+        $settings = medbeafgallery_get_settings();
+        $saved = isset($settings['category_display_mode']) ? sanitize_key($settings['category_display_mode']) : 'carousel';
+        $mode = isset($modes[$saved]) ? $saved : 'carousel';
+    }
+
+    /**
+     * Filters the category bar style of one gallery.
+     *
+     * @param string $mode      Mode key.
+     * @param string $requested The shortcode's category_style ('' when not given).
+     */
+    $mode = sanitize_key((string) apply_filters('medbeafgallery_category_display_mode', $mode, $requested));
+
+    return isset($modes[$mode]) ? $mode : 'carousel';
 }
 
 /**
@@ -349,7 +455,9 @@ class MedBeAfGallerySettings {
         'card_style' => 'split',
         // What fills the case window around a photo that does not fill it:
         // 'blur' = a blurred, darkened copy of the photo; 'plain' = black.
-        'photo_backdrop' => 'blur'
+        'photo_backdrop' => 'blur',
+        // How the category bar looks: see medbeafgallery_category_display_modes().
+        'category_display_mode' => 'carousel'
     );
 
     /**
@@ -591,7 +699,18 @@ function medbeafgallery_allowed_svg_html() {
         )),
         'tspan'    => array_merge($shared, array('x' => true, 'y' => true, 'dx' => true, 'dy' => true)),
         'title'    => array(),
+        // The category bar's drop-down style.
+        'select'   => array('id' => true, 'class' => true, 'name' => true, 'aria-label' => true, 'aria-describedby' => true),
+        'option'   => array('value' => true, 'selected' => true, 'disabled' => true),
+        'label'    => array('for' => true, 'class' => true, 'id' => true),
     ));
+    // Category tiles are keyboard-operable divs (role="button").
+    if (isset($allowed['div']) && is_array($allowed['div'])) {
+        $allowed['div']['tabindex'] = true;
+        $allowed['div']['role'] = true;
+        $allowed['div']['aria-pressed'] = true;
+        $allowed['div']['aria-label'] = true;
+    }
 
     return $allowed;
 }
