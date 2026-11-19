@@ -120,7 +120,7 @@ function medbeafgallery_display_statistics($stats) {
                     <a href="https://medicalbeforeaftergallery.com/" target="_blank"><?php esc_html_e('Upgrade to Pro', 'medical-before-after-gallery'); ?></a>
                 </p>
             <?php endif; ?>
-            <a href="<?php echo esc_url(admin_url('edit-tags.php?taxonomy=medbeafgallery_category&post_type=medbeafgallery_case')); ?>" class="medbeafgallery-stat-link">
+            <a href="<?php echo esc_url(medbeafgallery_categories_admin_url()); ?>" class="medbeafgallery-stat-link">
                 <?php esc_html_e('Manage', 'medical-before-after-gallery'); ?> →
             </a>
         </div>

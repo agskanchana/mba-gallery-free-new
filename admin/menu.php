@@ -56,14 +56,27 @@ function medbeafgallery_admin_menu() {
 
     // Check if the taxonomy exists before adding the menu
     if (taxonomy_exists('medbeafgallery_category')) {
-        add_submenu_page(
-            'medbeafgallery-gallery',
-            esc_html__('Categories', 'medical-before-after-gallery'),
-            esc_html__('Categories', 'medical-before-after-gallery'),
-            'manage_options',
-            'edit-tags.php?taxonomy=medbeafgallery_category&post_type=medbeafgallery_case',
-            ''
-        );
+        if (defined('MEDBEAFGALLERY_CATEGORIES_PAGE') && function_exists('medbeafgallery_categories_manager_page')) {
+            // The plugin's own Categories screen (admin/categories-manager.php);
+            // WordPress's term screen stays reachable from its "Advanced" link.
+            add_submenu_page(
+                'medbeafgallery-gallery',
+                esc_html__('Categories', 'medical-before-after-gallery'),
+                esc_html__('Categories', 'medical-before-after-gallery'),
+                'manage_options',
+                MEDBEAFGALLERY_CATEGORIES_PAGE,
+                'medbeafgallery_categories_manager_page'
+            );
+        } else {
+            add_submenu_page(
+                'medbeafgallery-gallery',
+                esc_html__('Categories', 'medical-before-after-gallery'),
+                esc_html__('Categories', 'medical-before-after-gallery'),
+                'manage_options',
+                'edit-tags.php?taxonomy=medbeafgallery_category&post_type=medbeafgallery_case',
+                ''
+            );
+        }
     }
 
     // Add Pro Features page only if Pro is NOT active
@@ -109,6 +122,11 @@ function medbeafgallery_fix_submenu($submenu_file) {
     // Highlight the All Cases submenu when on the case edit screen
     if ($pagenow === 'post.php' && $current_screen->post_type === 'medbeafgallery_case') {
         $submenu_file = 'edit.php?post_type=medbeafgallery_case';
+    }
+
+    // WordPress's own category screens ("Advanced") still belong to Categories.
+    if ($current_screen && $current_screen->taxonomy === 'medbeafgallery_category' && defined('MEDBEAFGALLERY_CATEGORIES_PAGE')) {
+        $submenu_file = MEDBEAFGALLERY_CATEGORIES_PAGE;
     }
 
     return $submenu_file;
@@ -352,6 +370,8 @@ function medbeafgallery_pro_features_page() {
                         __('Hover-Reveal Cards', 'medical-before-after-gallery'),
                         __('Blurred Photo Background in the Case Window', 'medical-before-after-gallery'),
                         __('Doctor Cards', 'medical-before-after-gallery'),
+                        __('Category Styles: Carousel, Grid, Buttons, Drop-down', 'medical-before-after-gallery'),
+                        __('Categories Screen with Drag-and-Drop Order', 'medical-before-after-gallery'),
                     ) as $medbeafgallery_both) : ?>
                     <tr>
                         <td><?php echo esc_html($medbeafgallery_both); ?></td>
@@ -359,6 +379,11 @@ function medbeafgallery_pro_features_page() {
                         <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
                     </tr>
                     <?php endforeach; ?>
+                    <tr class="pro-feature">
+                        <td><?php esc_html_e('Category Tabs and Photo Tiles', 'medical-before-after-gallery'); ?></td>
+                        <td><span class="dashicons dashicons-dismiss feature-not-included"></span></td>
+                        <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
+                    </tr>
                     <tr class="pro-feature">
                         <td><?php esc_html_e('Multiple Before-After Pairs', 'medical-before-after-gallery'); ?></td>
                         <td><span class="dashicons dashicons-dismiss feature-not-included"></span></td>

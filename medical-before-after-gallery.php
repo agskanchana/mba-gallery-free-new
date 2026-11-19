@@ -506,6 +506,8 @@ require_once MEDBEAFGALLERY_PATH . 'includes/pro-compat.php';
 // Include admin files
 if (is_admin()) {
     require_once MEDBEAFGALLERY_PATH . 'admin/metaboxes.php';
+    // The Categories screen (also serves its admin-ajax actions).
+    require_once MEDBEAFGALLERY_PATH . 'admin/categories-manager.php';
 }
 
 // Call this on plugin activation
