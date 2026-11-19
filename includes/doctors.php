@@ -70,8 +70,49 @@ function medbeafgallery_get_case_doctors($post_id) {
 
 /* ── Admin menu ────────────────────────────────────────────────────────────── */
 
+/**
+ * Is the plugin's own Doctors screen (admin/doctors-manager.php) loaded?
+ *
+ * @return bool
+ */
+function medbeafgallery_doctors_manager_available() {
+    return defined('MEDBEAFGALLERY_DOCTORS_PAGE') && function_exists('medbeafgallery_doctors_manager_page');
+}
+
+/**
+ * Where "manage doctors" links go: the plugin's Doctors screen when it is
+ * loaded, else WordPress's term screen.
+ *
+ * @param bool $add Open the "Add doctor" panel straight away.
+ * @return string
+ */
+function medbeafgallery_doctors_admin_url($add = false) {
+    if (medbeafgallery_doctors_manager_available()) {
+        $args = array('page' => MEDBEAFGALLERY_DOCTORS_PAGE);
+        if ($add) {
+            $args['add'] = '1';
+        }
+        return add_query_arg($args, admin_url('admin.php'));
+    }
+    return admin_url('edit-tags.php?taxonomy=medbeafgallery_doctor&post_type=medbeafgallery_case');
+}
+
 function medbeafgallery_doctors_admin_menu() {
     if (!taxonomy_exists('medbeafgallery_doctor')) {
+        return;
+    }
+    if (medbeafgallery_doctors_manager_available()) {
+        // The plugin's own Doctors screen; WordPress's term screen stays
+        // reachable from its "Advanced" link.
+        add_submenu_page(
+            'medbeafgallery-gallery',
+            esc_html__('Doctors', 'medical-before-after-gallery'),
+            esc_html__('Doctors', 'medical-before-after-gallery'),
+            'manage_options',
+            MEDBEAFGALLERY_DOCTORS_PAGE,
+            'medbeafgallery_doctors_manager_page',
+            4 // After Categories, before Pro Features.
+        );
         return;
     }
     add_submenu_page(
@@ -98,7 +139,10 @@ add_filter('parent_file', 'medbeafgallery_doctors_parent_file', 20);
 function medbeafgallery_doctors_submenu_file($submenu_file) {
     $screen = function_exists('get_current_screen') ? get_current_screen() : null;
     if ($screen && $screen->taxonomy === 'medbeafgallery_doctor') {
-        return 'edit-tags.php?taxonomy=medbeafgallery_doctor&post_type=medbeafgallery_case';
+        // WordPress's own doctor screens ("Advanced") still belong to Doctors.
+        return medbeafgallery_doctors_manager_available()
+            ? MEDBEAFGALLERY_DOCTORS_PAGE
+            : 'edit-tags.php?taxonomy=medbeafgallery_doctor&post_type=medbeafgallery_case';
     }
     return $submenu_file;
 }
@@ -294,12 +338,12 @@ function medbeafgallery_doctor_meta_box_render($post) {
     $doctors = get_terms(array('taxonomy' => 'medbeafgallery_doctor', 'hide_empty' => false, 'orderby' => 'name'));
     $current = wp_get_object_terms($post->ID, 'medbeafgallery_doctor', array('fields' => 'ids'));
     $current = (!is_wp_error($current) && !empty($current)) ? (int) $current[0] : 0;
-    $manage  = admin_url('edit-tags.php?taxonomy=medbeafgallery_doctor&post_type=medbeafgallery_case');
+    $manage  = medbeafgallery_doctors_admin_url();
 
     wp_nonce_field('medbeafgallery_case_doctor', 'medbeafgallery_case_doctor_nonce');
 
     if (is_wp_error($doctors) || empty($doctors)) {
-        echo '<p>' . esc_html__('No doctors yet.', 'medical-before-after-gallery') . ' <a href="' . esc_url($manage) . '">' . esc_html__('Add a doctor', 'medical-before-after-gallery') . '</a></p>';
+        echo '<p>' . esc_html__('No doctors yet.', 'medical-before-after-gallery') . ' <a href="' . esc_url(medbeafgallery_doctors_admin_url(true)) . '">' . esc_html__('Add a doctor', 'medical-before-after-gallery') . '</a></p>';
         echo '<input type="hidden" name="medbeafgallery_case_doctor" value="0">';
         return;
     }

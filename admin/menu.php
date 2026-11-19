@@ -36,14 +36,27 @@ function medbeafgallery_admin_menu() {
     );
 
     // All Cases menu item
-    add_submenu_page(
-        'medbeafgallery-gallery',
-        esc_html__('All Cases', 'medical-before-after-gallery'),
-        esc_html__('All Cases', 'medical-before-after-gallery'),
-        'manage_options',
-        'edit.php?post_type=medbeafgallery_case',
-        ''
-    );
+    if (defined('MEDBEAFGALLERY_CASES_PAGE') && function_exists('medbeafgallery_cases_manager_page')) {
+        // The plugin's own Cases screen (admin/cases-manager.php); WordPress's
+        // list table stays reachable from its "Classic list" link.
+        add_submenu_page(
+            'medbeafgallery-gallery',
+            esc_html__('Cases', 'medical-before-after-gallery'),
+            esc_html__('All Cases', 'medical-before-after-gallery'),
+            'manage_options',
+            MEDBEAFGALLERY_CASES_PAGE,
+            'medbeafgallery_cases_manager_page'
+        );
+    } else {
+        add_submenu_page(
+            'medbeafgallery-gallery',
+            esc_html__('All Cases', 'medical-before-after-gallery'),
+            esc_html__('All Cases', 'medical-before-after-gallery'),
+            'manage_options',
+            'edit.php?post_type=medbeafgallery_case',
+            ''
+        );
+    }
 
     add_submenu_page(
         'medbeafgallery-gallery',
@@ -119,9 +132,13 @@ add_filter('parent_file', 'medbeafgallery_fix_submenu_highlighting');
 function medbeafgallery_fix_submenu($submenu_file) {
     global $current_screen, $pagenow;
 
-    // Highlight the All Cases submenu when on the case edit screen
-    if ($pagenow === 'post.php' && $current_screen->post_type === 'medbeafgallery_case') {
-        $submenu_file = 'edit.php?post_type=medbeafgallery_case';
+    // Highlight the All Cases submenu on the case edit screen and, when the
+    // Cases screen exists, on WordPress's own list table ("Classic list").
+    if ($current_screen && $current_screen->post_type === 'medbeafgallery_case'
+        && ($pagenow === 'post.php' || $pagenow === 'edit.php')) {
+        $submenu_file = (defined('MEDBEAFGALLERY_CASES_PAGE') && function_exists('medbeafgallery_cases_manager_page'))
+            ? MEDBEAFGALLERY_CASES_PAGE
+            : 'edit.php?post_type=medbeafgallery_case';
     }
 
     // WordPress's own category screens ("Advanced") still belong to Categories.

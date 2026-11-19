@@ -1,0 +1,707 @@
+/**
+ * Case editor layout (admin/case-editor.php). Scoped to body.medbeafgallery-ce
+ * (post.php / post-new.php for medbeafgallery_case). Admin CSS: no armour.
+ */
+
+.medbeafgallery-ce {
+    --medbeafgallery-ce-accent: var(--wp-admin-theme-color, #2271b1);
+    --medbeafgallery-ce-accent-dark: var(--wp-admin-theme-color-darker-10, #135e96);
+    --medbeafgallery-ce-text: #1d2327;
+    --medbeafgallery-ce-muted: #50575e;
+    --medbeafgallery-ce-line: #dcdcde;
+    --medbeafgallery-ce-soft: #f6f7f7;
+    --medbeafgallery-ce-done: #00813a;
+    --medbeafgallery-ce-band-top: 32px;
+}
+
+.medbeafgallery-ce [hidden] {
+    display: none !important;
+}
+
+/* WordPress's page heading: the band says it instead (kept for screen readers). */
+.medbeafgallery-ce .wrap > h1.wp-heading-inline {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.medbeafgallery-ce .wrap > .page-title-action {
+    display: none;
+}
+
+.medbeafgallery-ce .wrap {
+    margin-top: 14px;
+}
+
+/* Header band ----------------------------------------------------------- */
+
+.medbeafgallery-ce-band {
+    position: sticky;
+    top: var(--medbeafgallery-ce-band-top);
+    z-index: 30;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px 22px;
+    margin: 6px 0 18px;
+    padding: 10px 14px 10px 10px;
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid var(--medbeafgallery-ce-line);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.medbeafgallery-ce-band-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.medbeafgallery-ce-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    min-height: 36px;
+    padding: 0 12px 0 6px;
+    border-right: 1px solid #f0f0f1;
+    color: var(--medbeafgallery-ce-muted);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.medbeafgallery-ce-back:hover {
+    color: var(--medbeafgallery-ce-accent);
+}
+
+.medbeafgallery-ce-back .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.medbeafgallery-ce-heading {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: center;
+    justify-content: start;
+    gap: 2px 8px;
+    min-width: 0;
+}
+
+.medbeafgallery-ce-eyebrow {
+    color: var(--medbeafgallery-ce-text);
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.medbeafgallery-ce-status {
+    justify-self: start;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: #f0f0f1;
+    color: #50575e;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 20px;
+    white-space: nowrap;
+}
+
+.medbeafgallery-ce-status.is-publish {
+    background: #edfaef;
+    color: #00632b;
+}
+
+.medbeafgallery-ce-status.is-pending {
+    background: #fcf9e8;
+    color: #7a5600;
+}
+
+.medbeafgallery-ce-status.is-future {
+    background: #f0f6fc;
+    color: #0a4b78;
+}
+
+.medbeafgallery-ce-status.is-private {
+    background: #f4effa;
+    color: #5b3a87;
+}
+
+.medbeafgallery-ce-status.is-new {
+    background: #f0f6fc;
+    color: #0a4b78;
+}
+
+.medbeafgallery-ce-progress {
+    grid-column: 1 / -1;
+    color: var(--medbeafgallery-ce-muted);
+    font-size: 12px;
+    line-height: 16px;
+    white-space: nowrap;
+}
+
+.medbeafgallery-ce-band.is-complete .medbeafgallery-ce-progress {
+    color: var(--medbeafgallery-ce-done);
+    font-weight: 600;
+}
+
+/* Steps */
+.medbeafgallery-ce-steps-wrap {
+    min-width: 0;
+}
+
+.medbeafgallery-ce-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: none;
+}
+
+.medbeafgallery-ce-step {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+/* Connector between steps */
+.medbeafgallery-ce-step + .medbeafgallery-ce-step::before {
+    content: "";
+    width: 18px;
+    height: 2px;
+    margin: 0 2px;
+    border-radius: 1px;
+    background: #dcdcde;
+}
+
+.medbeafgallery-ce-step a {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 36px;
+    padding: 0 10px 0 6px;
+    border-radius: 999px;
+    color: var(--medbeafgallery-ce-muted);
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.medbeafgallery-ce-step a:hover {
+    background: #f0f6fc;
+    color: var(--medbeafgallery-ce-text);
+}
+
+.medbeafgallery-ce-step-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: 2px solid #c3c4c7;
+    border-radius: 50%;
+    background: #fff;
+    color: #50575e;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    box-sizing: border-box;
+}
+
+.medbeafgallery-ce-step.is-optional:not(.is-done) .medbeafgallery-ce-step-dot {
+    border-style: dashed;
+}
+
+.medbeafgallery-ce-step.is-done a {
+    color: var(--medbeafgallery-ce-text);
+}
+
+.medbeafgallery-ce-step.is-done .medbeafgallery-ce-step-dot {
+    border-color: var(--medbeafgallery-ce-done);
+    background: var(--medbeafgallery-ce-done);
+    color: #fff;
+}
+
+.medbeafgallery-ce-step.is-done .medbeafgallery-ce-step-num {
+    display: none;
+}
+
+.medbeafgallery-ce-step.is-done .medbeafgallery-ce-step-dot::before {
+    content: "";
+    width: 9px;
+    height: 5px;
+    margin-top: -2px;
+    border-left: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(-45deg);
+}
+
+.medbeafgallery-ce-step.is-done + .medbeafgallery-ce-step::before {
+    background: #8fceaa;
+}
+
+/* Actions */
+.medbeafgallery-ce-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.medbeafgallery-ce .medbeafgallery-ce-actions .button {
+    min-height: 36px;
+    padding: 0 16px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.medbeafgallery-ce .medbeafgallery-ce-actions .button-primary {
+    font-weight: 600;
+}
+
+/* Focus */
+.medbeafgallery-ce-back:focus,
+.medbeafgallery-ce-step a:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.medbeafgallery-ce-back:focus-visible,
+.medbeafgallery-ce-step a:focus-visible {
+    outline: 2px solid var(--medbeafgallery-ce-accent);
+    outline-offset: 1px;
+    border-radius: 6px;
+}
+
+/* Jump targets clear the sticky band. */
+.medbeafgallery-ce #titlediv,
+.medbeafgallery-ce #poststuff .postbox,
+.medbeafgallery-ce #postdivrich,
+.medbeafgallery-ce #medbeafgallery-ce-desc-head {
+    scroll-margin-top: 140px;
+}
+
+.medbeafgallery-ce-flash {
+    animation: medbeafgallery-ce-flash 1.4s ease-out;
+}
+
+@keyframes medbeafgallery-ce-flash {
+    0%, 30% { box-shadow: 0 0 0 3px var(--medbeafgallery-ce-accent); }
+    100% { box-shadow: 0 0 0 3px transparent; }
+}
+
+/* Title ------------------------------------------------------------------ */
+
+.medbeafgallery-ce #titlediv {
+    margin-bottom: 0;
+}
+
+.medbeafgallery-ce #titlediv #title {
+    height: auto;
+    min-height: 52px;
+    padding: 8px 14px;
+    border-color: var(--medbeafgallery-ce-line);
+    border-radius: 10px;
+    font-size: 1.55em;
+    font-weight: 500;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.medbeafgallery-ce #titlediv #title:focus {
+    border-color: var(--medbeafgallery-ce-accent);
+    box-shadow: 0 0 0 1px var(--medbeafgallery-ce-accent);
+}
+
+.medbeafgallery-ce #titlediv #title::placeholder {
+    color: #8c8f94;
+    font-weight: 400;
+}
+
+/* The area under the title (photos) ------------------------------------- */
+
+.medbeafgallery-ce-lead {
+    margin: 18px 0 0;
+}
+
+.medbeafgallery-ce-lead .meta-box-sortables {
+    min-height: 0;
+}
+
+.medbeafgallery-ce-lead .meta-box-sortables.empty-container {
+    min-height: 0;
+    height: 0;
+    border: 0;
+}
+
+.medbeafgallery-ce.is-dragging-metaboxes .medbeafgallery-ce-lead .meta-box-sortables.empty-container {
+    height: auto;
+    min-height: 80px;
+    border: 3px dashed #c3c4c7;
+}
+
+/* Description ------------------------------------------------------------ */
+
+.medbeafgallery-ce-desc-head {
+    margin: 6px 0 8px;
+}
+
+.medbeafgallery-ce .medbeafgallery-ce-desc-title {
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.medbeafgallery-ce-desc-hint {
+    margin: 2px 0 0;
+    color: var(--medbeafgallery-ce-muted);
+}
+
+.medbeafgallery-ce #postdivrich.medbeafgallery-ce-has-head {
+    margin-bottom: 20px;
+}
+
+.medbeafgallery-ce #postdivrich #wp-content-editor-container {
+    border-color: var(--medbeafgallery-ce-line);
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+}
+
+.medbeafgallery-ce #postdivrich #post-status-info {
+    border-color: var(--medbeafgallery-ce-line);
+    border-radius: 0 0 10px 10px;
+}
+
+.medbeafgallery-ce #postdivrich #wp-content-editor-container:has(+ #post-status-info),
+.medbeafgallery-ce #postdivrich .wp-editor-container {
+    border-radius: 0;
+}
+
+/* Metabox cards ---------------------------------------------------------- */
+
+.medbeafgallery-ce #poststuff .postbox {
+    margin-bottom: 18px;
+    border: 1px solid var(--medbeafgallery-ce-line);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.medbeafgallery-ce #poststuff .postbox .postbox-header {
+    min-height: 46px;
+    border-bottom: 1px solid #f0f0f1;
+    border-radius: 12px 12px 0 0;
+}
+
+.medbeafgallery-ce #poststuff .postbox.closed .postbox-header {
+    border-bottom: 0;
+    border-radius: 12px;
+}
+
+.medbeafgallery-ce #poststuff .postbox .hndle {
+    padding: 12px 16px;
+    color: var(--medbeafgallery-ce-text);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.medbeafgallery-ce #poststuff .postbox .inside {
+    margin: 0;
+    padding: 14px 16px 16px;
+}
+
+.medbeafgallery-ce #poststuff #side-sortables .postbox .inside {
+    padding: 12px 14px 14px;
+}
+
+.medbeafgallery-ce #poststuff #submitdiv .inside {
+    padding: 0;
+}
+
+.medbeafgallery-ce #poststuff #submitdiv #major-publishing-actions {
+    border-radius: 0 0 12px 12px;
+}
+
+/* Free metabox content: the box already pads, drop the inner padding. */
+.medbeafgallery-ce #poststuff .postbox .medbeafgallery-admin-metabox {
+    padding: 0;
+}
+
+/* Photos ----------------------------------------------------------------- */
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-admin-metabox > .description:first-of-type {
+    margin-top: 0;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-image-pair-row {
+    gap: 16px;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-main-image-pair {
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-main-image-pair > .medbeafgallery-pair-header {
+    margin: 4px 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-image-pair-content {
+    margin-top: 0;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-image-container {
+    padding: 12px;
+    border: 1px solid var(--medbeafgallery-ce-line);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-image-container > label {
+    margin-bottom: 8px;
+    color: var(--medbeafgallery-ce-text);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-image-preview {
+    min-height: 240px;
+    margin-bottom: 10px;
+    border: 1px solid #eef0f2;
+    border-radius: 8px;
+    background: var(--medbeafgallery-ce-soft);
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-image-preview img {
+    width: auto;
+    max-width: 100%;
+    max-height: 340px;
+    object-fit: contain;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-image-preview:empty {
+    border: 2px dashed #c3c4c7;
+    background:
+        repeating-linear-gradient(135deg, #fafafa 0 10px, #f4f5f6 10px 20px);
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-image-preview:empty::after {
+    color: var(--medbeafgallery-ce-muted);
+    font-style: normal;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-image-container .button {
+    margin: 0 4px 4px 0;
+    border-radius: 6px;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-additional-pairs-section {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f1;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-pro-section-header {
+    padding-bottom: 0;
+    border-bottom: 0;
+    margin-bottom: 4px;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-pro-section-header h3 {
+    font-size: 14px;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-additional-pair {
+    padding: 14px;
+    border: 1px solid var(--medbeafgallery-ce-line);
+    border-radius: 10px;
+    background: var(--medbeafgallery-ce-soft);
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-additional-pair .medbeafgallery-image-preview {
+    min-height: 180px;
+}
+
+.medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-add-pair-container {
+    margin-top: 6px;
+}
+
+/* Case details (Pro's filter fields): a grid of labelled fields, each select
+   as wide as its column, instead of a two-column form table. */
+.medbeafgallery-ce #medbeafgallery_case_details .form-table,
+.medbeafgallery-ce #medbeafgallery_case_details .form-table tbody {
+    display: block;
+    width: 100%;
+}
+
+.medbeafgallery-ce #medbeafgallery_case_details .form-table tbody {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 14px 18px;
+    margin-top: 8px;
+}
+
+.medbeafgallery-ce #medbeafgallery_case_details .form-table tr {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid #e3e8ee;
+    border-radius: 10px;
+    background: #f8fafc;
+}
+
+.medbeafgallery-ce #medbeafgallery_case_details .form-table th,
+.medbeafgallery-ce #medbeafgallery_case_details .form-table td {
+    display: block;
+    width: auto;
+    padding: 0;
+}
+
+.medbeafgallery-ce #medbeafgallery_case_details .form-table th {
+    color: #1d2939;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.medbeafgallery-ce #medbeafgallery_case_details .form-table td select,
+.medbeafgallery-ce #medbeafgallery_case_details .form-table td input[type="text"],
+.medbeafgallery-ce #medbeafgallery_case_details .form-table td input[type="number"] {
+    width: 100%;
+    max-width: none;
+    min-height: 36px;
+}
+
+.medbeafgallery-ce #medbeafgallery_case_details .form-table td .description {
+    margin-top: 4px;
+}
+
+/* Sidebar ---------------------------------------------------------------- */
+
+.medbeafgallery-ce #poststuff #side-sortables .postbox .hndle {
+    padding: 11px 14px;
+}
+
+.medbeafgallery-ce #medbeafgallery_categorydiv .categorydiv div.tabs-panel {
+    max-height: 260px;
+    border-radius: 6px;
+}
+
+.medbeafgallery-ce #medbeafgallery_doctor_box select {
+    min-height: 34px;
+}
+
+/* Narrower desktops: steps wrap under the band's first row. -------------- */
+
+@media screen and (max-width: 1279px) {
+    .medbeafgallery-ce-band {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .medbeafgallery-ce-steps-wrap {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        padding-top: 8px;
+        border-top: 1px solid #f0f0f1;
+    }
+
+    .medbeafgallery-ce-steps {
+        justify-content: flex-start;
+    }
+}
+
+/* Phones and small tablets (WordPress's admin breakpoint) ---------------- */
+
+@media screen and (max-width: 782px) {
+    .medbeafgallery-ce .wrap {
+        margin-top: 10px;
+    }
+
+    .medbeafgallery-ce-band {
+        position: static;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+        padding: 8px 10px 10px;
+    }
+
+    .medbeafgallery-ce-back {
+        min-height: 44px;
+        padding-right: 10px;
+    }
+
+    .medbeafgallery-ce-steps-wrap {
+        grid-row: auto;
+        margin: 0 -10px;
+        padding: 8px 10px 2px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .medbeafgallery-ce-step + .medbeafgallery-ce-step::before {
+        width: 10px;
+    }
+
+    .medbeafgallery-ce-step a {
+        min-height: 44px;
+        padding: 0 8px 0 4px;
+    }
+
+    .medbeafgallery-ce-actions {
+        grid-row: auto;
+    }
+
+    .medbeafgallery-ce .medbeafgallery-ce-actions .button {
+        flex: 1 1 0;
+        min-height: 44px;
+        justify-content: center;
+    }
+
+    .medbeafgallery-ce #titlediv #title {
+        font-size: 1.3em;
+    }
+
+    .medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-image-pair-column {
+        min-width: 0;
+        flex: 1 1 100%;
+    }
+
+    .medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-image-preview {
+        min-height: 180px;
+    }
+
+    .medbeafgallery-ce #medbeafgallery_image_pairs .medbeafgallery-image-container .button {
+        min-height: 44px;
+    }
+
+    .medbeafgallery-ce #poststuff .postbox .inside {
+        padding: 12px;
+    }
+
+    .medbeafgallery-ce #titlediv,
+    .medbeafgallery-ce #poststuff .postbox,
+    .medbeafgallery-ce #postdivrich,
+    .medbeafgallery-ce #medbeafgallery-ce-desc-head {
+        scroll-margin-top: 60px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .medbeafgallery-ce-flash {
+        animation: none;
+    }
+}
