@@ -145,30 +145,20 @@ function medbeafgallery_process_settings() {
         $settings['cropping_width']  = isset($_POST['cropping_width'])  ? max(1, min(4000, absint($_POST['cropping_width'])))  : $fallback;
         $settings['cropping_height'] = isset($_POST['cropping_height']) ? max(1, min(4000, absint($_POST['cropping_height']))) : $fallback;
 
-        // Design settings - Support both hex colors and gradients
-        $gallery_color = isset($_POST['gallery_primary_color']) ? sanitize_text_field(wp_unslash($_POST['gallery_primary_color'])) : '#3498db';
-
-        // Validate color input - allow hex colors and CSS gradients
-        if (strpos($gallery_color, 'gradient') !== false) {
-            // For gradients, ensure it's a valid CSS gradient
-            $settings['gallery_primary_color'] = $gallery_color;
-        } else {
-            // For regular colors, ensure it's a valid hex color
-            $settings['gallery_primary_color'] = sanitize_hex_color($gallery_color) ?: '#3498db';
+        // Design settings. The Pro add-on's workspace moves these fields to its
+        // own Design screens and saves them there (medbeafgallery_save_design_settings()).
+        // The marker inside this form's Design section says the fields are in
+        // the form, so a form without them never resets them to defaults.
+        // (Pro add-ons before 1.6.0 leave the section in place, marker included.)
+        if (isset($_POST['medbeafgallery_design_fields'])) {
+            $settings = medbeafgallery_apply_design_settings($settings, array(
+                'gallery_primary_color'     => isset($_POST['gallery_primary_color']) ? wp_unslash($_POST['gallery_primary_color']) : '',
+                'category_display_mode'     => isset($_POST['category_display_mode']) ? wp_unslash($_POST['category_display_mode']) : 'carousel',
+                'rollup_subcategory_counts' => isset($_POST['rollup_subcategory_counts']),
+                'card_style'                => isset($_POST['card_style']) ? wp_unslash($_POST['card_style']) : 'split',
+                'photo_backdrop'            => isset($_POST['photo_backdrop']) ? wp_unslash($_POST['photo_backdrop']) : 'blur',
+            ));
         }
-        // Category bar style; unknown values (say, a Pro style after Pro was
-        // switched off) fall back to the carousel.
-        $category_mode = isset($_POST['category_display_mode']) ? sanitize_key(wp_unslash($_POST['category_display_mode'])) : 'carousel';
-        $settings['category_display_mode'] = array_key_exists($category_mode, medbeafgallery_category_display_modes()) ? $category_mode : 'carousel';
-
-        // Count subcategory cases toward the parent category's displayed total.
-        $settings['rollup_subcategory_counts'] = isset($_POST['rollup_subcategory_counts']);
-
-        // Card style and case-window background (unknown values fall back to the defaults).
-        $card_style = isset($_POST['card_style']) ? sanitize_key(wp_unslash($_POST['card_style'])) : 'split';
-        $settings['card_style'] = in_array($card_style, array('split', 'reveal'), true) ? $card_style : 'split';
-        $photo_backdrop = isset($_POST['photo_backdrop']) ? sanitize_key(wp_unslash($_POST['photo_backdrop'])) : 'blur';
-        $settings['photo_backdrop'] = in_array($photo_backdrop, array('blur', 'plain'), true) ? $photo_backdrop : 'blur';
 
         // Destructive-uninstall opt-in. Stays false unless the owner ticks it.
         $settings['delete_data_on_uninstall'] = isset($_POST['delete_data_on_uninstall']);
@@ -292,13 +282,15 @@ function medbeafgallery_display_settings_form_main($settings) {
             <hr>
 
             <!-- New Design Section -->
-            <h3><?php esc_html_e('Design', 'medical-before-after-gallery'); ?></h3>
-            <table class="form-table">
+            <h3 class="medbeafgallery-design-heading"><?php esc_html_e('Design', 'medical-before-after-gallery'); ?></h3>
+            <table class="form-table medbeafgallery-design-table">
                 <tr>
                     <th scope="row">
                         <label for="gallery_primary_color"><?php esc_html_e('Gallery Color', 'medical-before-after-gallery'); ?></label>
                     </th>
                     <td>
+                        <?php /* Tells the save handler this form carries the Design fields (see medbeafgallery_process_settings()). */ ?>
+                        <input type="hidden" name="medbeafgallery_design_fields" value="1">
                         <input type="text" name="gallery_primary_color" id="gallery_primary_color"
                                value="<?php echo esc_attr($settings['gallery_primary_color'] ?? '#3498db'); ?>"
                                class="medbeafgallery-color-picker regular-text">

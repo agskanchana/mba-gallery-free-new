@@ -247,6 +247,66 @@ function medbeafgallery_sort_category_terms($terms) {
 }
 
 /**
+ * Apply design values to a settings array: brand colour (hex or a plain CSS
+ * gradient), category style, subcategory counts, card style and case-window
+ * background. Only keys present in $input change; unknown values fall back to
+ * the defaults, as the settings form always did.
+ *
+ * @param array $settings Current settings.
+ * @param array $input    Unslashed values.
+ * @return array
+ */
+function medbeafgallery_apply_design_settings($settings, $input) {
+    $settings = is_array($settings) ? $settings : array();
+    $input = is_array($input) ? $input : array();
+
+    if (array_key_exists('gallery_primary_color', $input)) {
+        $color = trim(sanitize_text_field((string) $input['gallery_primary_color']));
+        if (strpos($color, 'gradient') !== false) {
+            // A plain linear/radial gradient only: it is written into a stylesheet.
+            $valid = strlen($color) < 500
+                && preg_match('/^(?:linear|radial)-gradient\([#a-z0-9\s.,%()+-]+\)$/i', $color)
+                && !preg_match('/url|expression|var\(/i', $color);
+            $settings['gallery_primary_color'] = $valid ? $color : '#3498db';
+        } else {
+            $settings['gallery_primary_color'] = sanitize_hex_color($color) ?: '#3498db';
+        }
+    }
+    if (array_key_exists('category_display_mode', $input)) {
+        $mode = sanitize_key((string) $input['category_display_mode']);
+        // Unknown values (say, a Pro style after Pro was switched off) fall back to the carousel.
+        $settings['category_display_mode'] = array_key_exists($mode, medbeafgallery_category_display_modes()) ? $mode : 'carousel';
+    }
+    if (array_key_exists('rollup_subcategory_counts', $input)) {
+        $settings['rollup_subcategory_counts'] = in_array($input['rollup_subcategory_counts'], array(true, 1, '1', 'true', 'on'), true);
+    }
+    if (array_key_exists('card_style', $input)) {
+        $card = sanitize_key((string) $input['card_style']);
+        $settings['card_style'] = in_array($card, array('split', 'reveal'), true) ? $card : 'split';
+    }
+    if (array_key_exists('photo_backdrop', $input)) {
+        $backdrop = sanitize_key((string) $input['photo_backdrop']);
+        $settings['photo_backdrop'] = in_array($backdrop, array('blur', 'plain'), true) ? $backdrop : 'blur';
+    }
+
+    return $settings;
+}
+
+/**
+ * Save design values (see medbeafgallery_apply_design_settings()). Used by the
+ * Pro add-on's Design screens; the caller checks the capability and nonce.
+ *
+ * @param array $input Unslashed values.
+ * @return array The saved settings.
+ */
+function medbeafgallery_save_design_settings($input) {
+    $settings = get_option('medbeafgallery_settings', array());
+    $settings = medbeafgallery_apply_design_settings(is_array($settings) ? $settings : array(), $input);
+    update_option('medbeafgallery_settings', $settings);
+    return $settings;
+}
+
+/**
  * Where "Manage categories" links go: the plugin's Categories screen
  * (admin/categories-manager.php), else WordPress's term screen.
  *
