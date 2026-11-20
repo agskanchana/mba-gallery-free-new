@@ -99,7 +99,7 @@ They are kept, unless you tick "Also delete all cases, categories and their imag
 == Changelog ==
 
 = 1.5.0 =
-* Added: "Hover reveal" card style (optional): the before photo wipes to the after photo on hover, keyboard focus or a press-and-hold, and plays once as each card scrolls into view (never for visitors who ask for reduced motion)
+* Added: "Hover reveal" card style (optional): the before photo wipes to the after photo on hover, keyboard focus or a press-and-hold, and plays once as each card scrolls into view (never for visitors who ask for reduced motion). Each photo is shown whole, over a soft blurred copy of itself — nothing is cropped away
 * Added: a blurred copy of the photo fills the case window instead of black bars (Design → Case Window Background)
 * Added: doctors — Gallery → Doctors with photo, credentials, location and profile link; choose the doctor in each case; a doctor card in the case window
 * Added: shortcode options `card_style` and a working `show_filters="false"`
@@ -112,6 +112,7 @@ They are kept, unless you tick "Also delete all cases, categories and their imag
 * Improved: the case window's view buttons are labelled (Slider, Before, After), and the doctor card sits under the photo on wide screens
 * Fixed: the `items_per_page` and `default_category` shortcode options were ignored
 * Fixed: on phones the close button covered the end of a long case title
+* Fixed: a case with a single category showed its category badge stretched across the whole card
 * Fixed: the dashboard's "Total Images" count missed every additional photo pair
 * Removed: the consultation-button settings, which never showed a button in the free plugin (the booking button is part of the Pro add-on)
 * Changed: the dashboard and case editor no longer show locked copies of Pro settings; one short card lists what the Pro add-on adds

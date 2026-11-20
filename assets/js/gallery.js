@@ -827,6 +827,12 @@ function createGalleryItem(item) {
     const stateChip = revealCards
         ? `<span class="medbeafgallery-card-state" aria-hidden="true"><span class="medbeafgallery-card-state-before">${medbeafgalleryEscapeAttr(cfg.beforeLabel || cfg.beforeText || 'Before')}</span><span class="medbeafgallery-card-state-after">${medbeafgalleryEscapeAttr(cfg.afterLabel || cfg.afterText || 'After')}</span></span>`
         : '';
+    // Hover-reveal cards show each photo whole, over a blurred copy of itself
+    // that fills the frame (no part of a result cropped away). The after copy
+    // wipes in with the after photo.
+    const revealBackdrop = (src, side) => revealCards
+        ? `<img src="${medbeafgalleryEscapeAttr(src)}" alt="" aria-hidden="true" class="medbeafgallery-preview-backdrop medbeafgallery-preview-backdrop-${side}" loading="lazy" decoding="async">`
+        : '';
     if (revealCards) {
         galleryItem.classList.add('medbeafgallery-reveal-card');
     }
@@ -836,8 +842,10 @@ function createGalleryItem(item) {
         <div class="medbeafgallery-gallery-image-container">
             ${multiViewBadge}
             <div class="medbeafgallery-preview-container">
+                ${revealBackdrop(beforeSrc, 'before')}
                 ${beforeTag}
                 <div class="medbeafgallery-preview-divider" aria-hidden="true"></div>
+                ${revealBackdrop(afterSrc, 'after')}
                 ${afterTag}
                 ${stateChip}
             </div>
