@@ -417,8 +417,8 @@ function medbeafgallery_render_category_carousel($display_mode = 'grid', $defaul
     }
 
     // Each style is built on one of four structures. A style an add-on registers
-    // picks the structure it restyles (Pro: tabs on the carousel, photo tiles on
-    // the grid); unknown styles fall back to the carousel, the long-standing look.
+    // picks the structure it restyles (Pro: tabs on the carousel, photo pills on
+    // the buttons); unknown styles fall back to the carousel, the long-standing look.
     $structures = array('carousel' => 'carousel', 'grid' => 'grid', 'buttons' => 'buttons', 'dropdown' => 'dropdown');
     $structure  = isset($structures[$display_mode])
         ? $structures[$display_mode]

@@ -41,7 +41,7 @@ The optional [Pro add-on](https://medicalbeforeaftergallery.com/) adds:
 * Case filters (age, gender, procedure and your own), search, sort, filter by doctor, shareable links
 * Masonry layout plus Spotlight, Procedure rows, Editorial and Uncropped layouts, style presets, slider and photo cards
 * Case-window styles: Cinema, Drawer, Comparison desk with a linked magnifier, Case story, and a swipeable story mode on phones
-* Two more category styles: text tabs, and photo tiles showing a real result and the case count for each category
+* Two more category styles: text tabs, and photo pills showing a small result photo and the case count for each category
 * Single-case embed for procedure pages and blog posts, in side-by-side, stacked or compact card layouts
 * Progress timeline with real, dated photos (6 weeks, 3 months, 1 year…)
 * "Find by area" body and face map, and "Help me choose" guided search

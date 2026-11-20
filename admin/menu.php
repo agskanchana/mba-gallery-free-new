@@ -397,7 +397,7 @@ function medbeafgallery_pro_features_page() {
                     </tr>
                     <?php endforeach; ?>
                     <tr class="pro-feature">
-                        <td><?php esc_html_e('Category Tabs and Photo Tiles', 'medical-before-after-gallery'); ?></td>
+                        <td><?php esc_html_e('Category Tabs and Photo Pills', 'medical-before-after-gallery'); ?></td>
                         <td><span class="dashicons dashicons-dismiss feature-not-included"></span></td>
                         <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
                     </tr>
