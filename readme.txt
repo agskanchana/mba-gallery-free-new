@@ -90,10 +90,11 @@ They are kept, unless you tick "Also delete all cases, categories and their imag
 1. Gallery with hover-reveal cards: each card wipes from the before photo to the after photo
 2. The case window: Slider, Before and After views, a blurred photo background and the doctor who treated the case
 3. On a phone: the gallery and the case window
-4. Adding a case: before and after photos and the doctor
+4. Adding a case: a checklist that ticks itself (title, photos, category, details, publish), the photos first, and the doctor
 5. Gallery settings: colours, category style, card style and case-window background
-6. Doctors: photo, credentials and location for each doctor
+6. Doctors: a staff directory with photo, credentials, location and case count; add and edit in a side panel
 7. Categories: add, rename, nest and drag into order, with a tile image for each
+8. Cases: photo cards with status, categories and doctor; search, filter, and publish or trash several at once
 
 == Changelog ==
 

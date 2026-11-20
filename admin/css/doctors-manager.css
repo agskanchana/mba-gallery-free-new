@@ -397,6 +397,39 @@ a.medbeafgallery-dm-profile:hover {
     color: #8a2424;
 }
 
+/* Narrow cards (four in a row on a 1280px screen are ~255px wide): the actions
+   row is wider than the card, so Delete keeps only its icon (its text stays for
+   screen readers) and, failing container queries, the row wraps instead of
+   pushing the button past the card's edge. */
+.medbeafgallery-dm-card {
+    container-type: inline-size;
+}
+
+.medbeafgallery-dm-card-actions,
+.medbeafgallery-dm-buttons {
+    flex-wrap: wrap;
+}
+
+@container (max-width: 270px) {
+    .medbeafgallery-dm-card-actions {
+        gap: 4px;
+        padding: 10px 8px;
+    }
+
+    .medbeafgallery-dm-delete {
+        padding: 0 8px;
+    }
+
+    .medbeafgallery-dm-delete-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(1px, 1px, 1px, 1px);
+        white-space: nowrap;
+    }
+}
+
 /* Reorder controls */
 .medbeafgallery-dm-order {
     display: flex;
