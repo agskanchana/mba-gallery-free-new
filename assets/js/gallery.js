@@ -16,6 +16,9 @@ let currentPairIndex = 0; // Track which image pair is currently displayed
 
 // Create the fixed-position container the modal is moved into while open, so
 // it escapes any theme wrapper with overflow/transform that would clip it.
+// z-index 99999: ties with the admin bar and fixed theme headers (Divi and
+// others use 99999) and wins, because the portal is the last child of <body>;
+// stays under Pro's layers (100000+), e.g. its consent notice in every version.
 function createModalPortal() {
     const existing = document.getElementById('medbeafgallery-modal-portal');
     if (existing) {
@@ -30,7 +33,7 @@ function createModalPortal() {
         left: 0;
         width: 100%;
         height: 100%;
-        z-index: 9999;
+        z-index: 99999;
         display: none;
     `;
 
@@ -43,6 +46,12 @@ function moveModalToPortal() {
     // Create portal if it doesn't exist
     if (!modalPortal) {
         modalPortal = createModalPortal();
+    }
+
+    // Last child of <body> again, so it also wins the z-index tie against layers
+    // that scripts added after page load (sticky headers, banners).
+    if (document.body && document.body.lastElementChild !== modalPortal) {
+        document.body.appendChild(modalPortal);
     }
 
     // Get the original modal

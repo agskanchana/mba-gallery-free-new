@@ -115,6 +115,7 @@ They are kept, unless you tick "Also delete all cases, categories and their imag
 * Improved: the case window's view buttons are labelled (Slider, Before, After), and the doctor card sits under the photo on wide screens
 * Fixed: the `items_per_page` and `default_category` shortcode options were ignored
 * Fixed: on phones the close button covered the end of a long case title
+* Fixed: a fixed theme header or the WordPress admin bar could cover the top of the case window, close button included
 * Fixed: a case with a single category showed its category badge stretched across the whole card
 * Fixed: the dashboard's "Total Images" count missed every additional photo pair
 * Removed: the consultation-button settings, which never showed a button in the free plugin (the booking button is part of the Pro add-on)
