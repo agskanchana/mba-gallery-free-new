@@ -619,7 +619,8 @@
         var actions = el('div', { className: 'medbeafgallery-cm-actions' });
 
         if (can.edit) {
-            actions.appendChild(linkButton(t.rename, 'rename', fmt(t.renameLabel, row.name), function () {
+            // One Edit panel: name, description and any add-on fields (Pro: icon).
+            actions.appendChild(linkButton(t.edit || t.rename, 'rename', fmt(t.editLabel || t.renameLabel, row.name), function () {
                 openPanel(item, row, 'rename');
             }));
         }
@@ -643,11 +644,6 @@
                 setImage(row.id, 0);
             }));
         }
-        actions.appendChild(el('a', {
-            className: 'medbeafgallery-cm-link',
-            href: row.edit_url,
-            'data-part': 'settings'
-        }, [t.moreSettings, srText(' — ' + row.name)]));
         if (can.delete) {
             actions.appendChild(linkButton(t.delete, 'delete', fmt(t.deleteLabel, row.name), function () {
                 openPanel(item, row, 'delete');
@@ -789,18 +785,61 @@
         return 'medbeafgallery-cm-' + prefix + '-' + id;
     }
 
+    // The Edit panel. Add-on fields come from cfg.fields (type "choice": a row
+    // of labelled options, each with an optional icon).
+    function buildChoiceField(field, row) {
+        var current = row.extra && row.extra[field.key] !== undefined ? String(row.extra[field.key]) : '';
+        var name = inputId('field-' + field.key, row.id);
+        var set = el('fieldset', { className: 'medbeafgallery-cm-choice-field', 'data-field': field.key });
+        set.appendChild(el('legend', { text: field.label }));
+        var options = el('div', { className: 'medbeafgallery-cm-choices' });
+        (field.choices || []).forEach(function (choice) {
+            var input = el('input', { type: 'radio', name: name, value: choice.value });
+            input.checked = String(choice.value) === current;
+            var label = el('label', { className: 'medbeafgallery-cm-choice' }, [input]);
+            if (choice.svg) {
+                var art = el('span', { className: 'medbeafgallery-cm-choice-icon', 'aria-hidden': 'true' });
+                art.innerHTML = choice.svg; // SVG allow-listed on the server (medbeafgallery_cm_extra_fields()).
+                label.appendChild(art);
+            }
+            label.appendChild(el('span', { text: choice.label }));
+            options.appendChild(label);
+        });
+        set.appendChild(options);
+        if (field.help) {
+            set.appendChild(el('p', { className: 'description', text: field.help }));
+        }
+        return set;
+    }
+
     function buildRenamePanel(panel, rowEl, row, cancel) {
         rowEl.classList.add('is-editing');
         rowEl.querySelector('.medbeafgallery-cm-line').hidden = true;
 
         var id = inputId('rename', row.id);
+        var descId = inputId('description', row.id);
+        var helpId = descId + '-help';
         var input = el('input', { type: 'text', id: id, className: 'regular-text', value: row.name, maxlength: '200', autocomplete: 'off' });
-        var form = el('form', { className: 'medbeafgallery-cm-inline-form', novalidate: true }, [
-            el('label', { 'for': id, className: 'screen-reader-text', text: fmt(t.renameLabel, row.name) }),
-            input,
+        var description = el('textarea', { id: descId, rows: '2', maxlength: '1000', 'aria-describedby': helpId });
+        description.value = row.description || '';
+        var fields = (cfg.fields || []).filter(function (field) { return field && field.type === 'choice'; });
+        var body = [
+            el('div', { className: 'medbeafgallery-cm-edit-field' }, [
+                el('label', { 'for': id, text: t.nameLabel || t.newName }),
+                input
+            ]),
+            el('div', { className: 'medbeafgallery-cm-edit-field' }, [
+                el('label', { 'for': descId, text: t.descriptionLabel }),
+                description,
+                el('p', { className: 'description', id: helpId, text: t.descriptionHelp })
+            ])
+        ];
+        fields.forEach(function (field) { body.push(buildChoiceField(field, row)); });
+        body.push(el('div', { className: 'medbeafgallery-cm-edit-buttons' }, [
             el('button', { type: 'submit', className: 'button button-primary', text: t.save }),
-            el('button', { type: 'button', className: 'button', text: t.cancel, on: { click: function () { cancel('name'); } } })
-        ]);
+            el('button', { type: 'button', className: 'button', text: t.cancel, on: { click: function () { cancel('rename'); } } })
+        ]));
+        var form = el('form', { className: 'medbeafgallery-cm-edit-form', novalidate: true, 'aria-label': fmt(t.editLabel || t.renameLabel, row.name) }, body);
         form.addEventListener('submit', function (e) {
             e.preventDefault();
             var name = input.value.trim();
@@ -810,16 +849,19 @@
                 input.focus();
                 return;
             }
-            if (name === row.name) {
-                cancel('name');
-                return;
-            }
+            var extra = {};
+            fields.forEach(function (field) {
+                var picked = form.querySelector('[data-field="' + field.key + '"] input:checked');
+                if (picked) {
+                    extra[field.key] = picked.value;
+                }
+            });
             setFormBusy(form, true);
-            write('rename', { id: row.id, name: name }, {
+            write('edit', { id: row.id, name: name, description: description.value, extra: JSON.stringify(extra) }, {
                 success: function (data) {
                     var newName = data.row ? data.row.name : name;
-                    announce(fmt(t.renamed, row.name, newName));
-                    focusPart({ id: row.id, part: 'name' });
+                    announce(newName !== row.name ? fmt(t.renamed, row.name, newName) : fmt(t.saved, newName));
+                    focusPart({ id: row.id, part: 'rename' });
                     flash(row.id);
                 },
                 error: function (result, changed) {

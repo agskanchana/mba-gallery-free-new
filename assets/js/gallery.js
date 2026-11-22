@@ -889,13 +889,16 @@ function createGalleryItem(item) {
 
 /* ── Hover-reveal cards (Design → Card Style) ─────────────────────────────────
    The card shows the before photo; the after photo wipes in on hover or
-   keyboard focus (CSS), on a press-and-hold on touch screens (here), and once
-   by itself the first time each case's card scrolls into view. Visitors who
-   ask for reduced motion get no automatic wipe.
+   keyboard focus (CSS), on a press-and-hold on touch screens (here), and by
+   itself on ONE card per page view — the first one that scrolls into view — to
+   show visitors that the photo changes. Every card doing it (each new batch
+   while scrolling) read as the grid flickering. Visitors who ask for reduced
+   motion get no automatic wipe.
    ────────────────────────────────────────────────────────────────────────── */
 
 const medbeafgalleryPeekedIds = new Set();
 let medbeafgalleryPeekObserver = null;
+let medbeafgalleryPeekPlayed = false;
 
 function medbeafgalleryInitRevealCard(card, caseId) {
     const area = card.querySelector('.medbeafgallery-gallery-image-container');
@@ -936,21 +939,23 @@ function medbeafgalleryInitRevealCard(card, caseId) {
 
 function medbeafgalleryObservePeek(card, caseId) {
     if (!('IntersectionObserver' in window)) return;
+    if (medbeafgalleryPeekPlayed) return;
     if (medbeafgalleryPeekedIds.has(String(caseId))) return;
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     if (!medbeafgalleryPeekObserver) {
         medbeafgalleryPeekObserver = new IntersectionObserver((entries) => {
-            let order = 0;
             entries.forEach((entry) => {
-                if (!entry.isIntersecting) return;
-                medbeafgalleryPeekObserver.unobserve(entry.target);
+                if (!entry.isIntersecting || medbeafgalleryPeekPlayed) return;
                 const el = entry.target.closest('.medbeafgallery-gallery-item') || entry.target;
                 const id = el.dataset.id;
                 if (medbeafgalleryPeekedIds.has(id)) return;
                 medbeafgalleryPeekedIds.add(id);
+                // One card per page view: stop watching the rest.
+                medbeafgalleryPeekPlayed = true;
+                medbeafgalleryPeekObserver.disconnect();
 
-                const delay = 300 + (order++) * 180;
+                const delay = 300;
                 const play = () => setTimeout(() => {
                     if (!el.isConnected || el.matches(':hover')) return;
                     el.classList.add('is-peeking');

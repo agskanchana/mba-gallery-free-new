@@ -810,3 +810,98 @@ a.medbeafgallery-cm-count {
         transition: none;
     }
 }
+
+/* Edit panel: name, description and add-on fields (Pro: icon). */
+.medbeafgallery-cm-edit-form {
+    display: grid;
+    gap: 14px;
+    max-width: 640px;
+    margin: 4px 0 6px;
+}
+
+.medbeafgallery-cm-edit-field {
+    display: grid;
+    gap: 4px;
+}
+
+.medbeafgallery-cm-edit-field label,
+.medbeafgallery-cm-choice-field legend {
+    font-weight: 600;
+    color: var(--medbeafgallery-cm-text);
+}
+
+.medbeafgallery-cm-edit-field input[type="text"],
+.medbeafgallery-cm-edit-field textarea {
+    width: 100%;
+    max-width: 100%;
+}
+
+.medbeafgallery-cm-edit-form .description {
+    margin: 2px 0 0;
+    color: var(--medbeafgallery-cm-muted);
+}
+
+.medbeafgallery-cm-choice-field {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+}
+
+.medbeafgallery-cm-choice-field legend {
+    padding: 0;
+    margin-bottom: 6px;
+}
+
+.medbeafgallery-cm-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.medbeafgallery-cm-choice {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 3px 12px 3px 8px;
+    border: 1px solid var(--medbeafgallery-cm-line);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--medbeafgallery-cm-text);
+    cursor: pointer;
+}
+
+.medbeafgallery-cm-choice input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+}
+
+.medbeafgallery-cm-choice:has(input:checked) {
+    border-color: var(--medbeafgallery-cm-accent);
+    box-shadow: 0 0 0 1px var(--medbeafgallery-cm-accent);
+    background: color-mix(in srgb, var(--medbeafgallery-cm-accent) 7%, #fff);
+}
+
+.medbeafgallery-cm-choice:has(input:focus-visible) {
+    outline: 2px solid var(--medbeafgallery-cm-accent);
+    outline-offset: 2px;
+}
+
+.medbeafgallery-cm-choice-icon {
+    display: inline-flex;
+    line-height: 0;
+}
+
+.medbeafgallery-cm-choice-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.medbeafgallery-cm-edit-buttons {
+    display: flex;
+    gap: 8px;
+}

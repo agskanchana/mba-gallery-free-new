@@ -99,7 +99,10 @@ They are kept, unless you tick "Also delete all cases, categories and their imag
 == Changelog ==
 
 = 1.5.0 =
-* Added: "Hover reveal" card style (optional): the before photo wipes to the after photo on hover, keyboard focus or a press-and-hold, and plays once as each card scrolls into view (never for visitors who ask for reduced motion). Each photo is shown whole, over a soft blurred copy of itself — nothing is cropped away
+* Changed: the Categories screen edits a category in one panel — name, description and (with the Pro add-on) its icon; WordPress's own category and doctor screens are only offered when JavaScript is off
+* Fixed: clicking a category tile left a box around it (keyboard focus styles now show for the keyboard only)
+* Added: medbeafgallery_container_classes filter (classes on the gallery root from the first paint) and Categories screen hooks for add-on fields
+* Added: "Hover reveal" card style (optional): the before photo wipes to the after photo on hover, keyboard focus or a press-and-hold, and plays once on the first card that scrolls into view (never for visitors who ask for reduced motion). Each photo is shown whole, over a soft blurred copy of itself — nothing is cropped away
 * Added: a blurred copy of the photo fills the case window instead of black bars (Design → Case Window Background)
 * Added: doctors — Gallery → Doctors with photo, credentials, location and profile link; choose the doctor in each case; a doctor card in the case window
 * Added: shortcode options `card_style` and a working `show_filters="false"`

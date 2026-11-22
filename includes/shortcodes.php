@@ -93,8 +93,29 @@ function medbeafgallery_shortcode($atts) {
     // Start output buffering
     ob_start();
 
+    $container_classes = array('medbeafgallery-container');
+    if (!$show_filters) {
+        $container_classes[] = 'medbeafgallery-no-filters';
+    }
+    if ($card_style === 'reveal') {
+        $container_classes[] = 'medbeafgallery-cards-reveal';
+    }
+    /**
+     * Filter the gallery root's classes. Lets an add-on style the gallery from
+     * the first paint instead of adding a class from a script later.
+     *
+     * @since 1.5.0
+     * @param string[] $container_classes Class names.
+     * @param array    $atts              This gallery's shortcode attributes.
+     */
+    $container_classes = apply_filters('medbeafgallery_container_classes', $container_classes, $atts);
+    $container_classes = array_filter(array_map('sanitize_html_class', (array) $container_classes));
+    if (!in_array('medbeafgallery-container', $container_classes, true)) {
+        array_unshift($container_classes, 'medbeafgallery-container');
+    }
+
     ?>
-    <div class="medbeafgallery-container<?php echo $show_filters ? '' : ' medbeafgallery-no-filters'; ?><?php echo $card_style === 'reveal' ? ' medbeafgallery-cards-reveal' : ''; ?>" id="medbeafgallery-gallery-container">
+    <div class="<?php echo esc_attr(implode(' ', array_unique($container_classes))); ?>" id="medbeafgallery-gallery-container">
         <?php /* Gallery content */ ?>
         <div class="medbeafgallery-gallery-content" id="medbeafgallery-gallery-content">
             <?php

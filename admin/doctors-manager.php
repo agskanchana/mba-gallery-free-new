@@ -838,10 +838,12 @@ function medbeafgallery_doctors_manager_page() {
 
         <span class="screen-reader-text" id="medbeafgallery-dm-reorder-hint"><?php esc_html_e('Drag, or press the arrow keys, to change the order.', 'medical-before-after-gallery'); ?></span>
 
-        <p class="medbeafgallery-dm-footer">
-            <span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>
-            <a href="<?php echo esc_url($advanced); ?>"><?php esc_html_e('Advanced: open the standard WordPress screen', 'medical-before-after-gallery'); ?></a>
-        </p>
+        <?php /* Everything is edited on this screen; WordPress's own term screen is only offered without JavaScript. */ ?>
+        <noscript>
+            <p class="medbeafgallery-dm-footer">
+                <a href="<?php echo esc_url($advanced); ?>"><?php esc_html_e('Open the standard WordPress doctors screen', 'medical-before-after-gallery'); ?></a>
+            </p>
+        </noscript>
 
         <?php medbeafgallery_dm_drawer(); ?>
     </div>

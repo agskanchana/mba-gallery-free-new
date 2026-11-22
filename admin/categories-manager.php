@@ -232,6 +232,16 @@ function medbeafgallery_cm_row_data($node) {
         'order'     => $node['order'],
         'image_id'  => $image ? $image_id : 0,
         'image_url' => $image ? $image : '',
+        'description' => (string) $term->description,
+        /**
+         * Extra values an add-on edits on this screen (see the
+         * medbeafgallery_categories_manager_fields filter), keyed by field.
+         *
+         * @since 1.5.0
+         * @param array   $extra Field key => current value.
+         * @param WP_Term $term  The category.
+         */
+        'extra'     => (array) apply_filters('medbeafgallery_categories_manager_row_extra', array(), $term),
         'edit_url'  => add_query_arg(
             array(
                 'taxonomy'  => 'medbeafgallery_category',
@@ -370,6 +380,7 @@ function medbeafgallery_cm_enqueue($hook_suffix) {
         'usageText'   => medbeafgallery_cm_usage_text($usage),
         'upgradeUrl'  => 'https://medicalbeforeaftergallery.com/',
         'isPro'       => $is_pro,
+        'fields'      => medbeafgallery_cm_extra_fields(),
         'can'         => array(
             'add'    => current_user_can(medbeafgallery_cm_cap('manage_terms')),
             'edit'   => current_user_can(medbeafgallery_cm_cap('edit_terms')),
@@ -388,6 +399,46 @@ function medbeafgallery_cm_enqueue($hook_suffix) {
     ));
 }
 add_action('admin_enqueue_scripts', 'medbeafgallery_cm_enqueue');
+
+/**
+ * Extra fields an add-on shows in the Edit panel. Each field:
+ * key, label, type ('choice'), help, choices [ value, label, svg ].
+ * The SVG markup goes through the plugin's SVG allow-list.
+ *
+ * @return array[]
+ */
+function medbeafgallery_cm_extra_fields() {
+    /**
+     * @since 1.5.0
+     * @param array[] $fields Field definitions.
+     */
+    $fields = apply_filters('medbeafgallery_categories_manager_fields', array());
+    $out    = array();
+    foreach ((array) $fields as $field) {
+        if (!is_array($field) || empty($field['key']) || empty($field['choices']) || !is_array($field['choices'])) {
+            continue;
+        }
+        $choices = array();
+        foreach ($field['choices'] as $choice) {
+            if (!is_array($choice) || !isset($choice['value'], $choice['label'])) {
+                continue;
+            }
+            $choices[] = array(
+                'value' => sanitize_key((string) $choice['value']),
+                'label' => wp_strip_all_tags((string) $choice['label']),
+                'svg'   => isset($choice['svg']) ? wp_kses((string) $choice['svg'], medbeafgallery_allowed_svg_html()) : '',
+            );
+        }
+        $out[] = array(
+            'key'     => sanitize_key((string) $field['key']),
+            'label'   => wp_strip_all_tags(isset($field['label']) ? (string) $field['label'] : ''),
+            'help'    => wp_strip_all_tags(isset($field['help']) ? (string) $field['help'] : ''),
+            'type'    => 'choice',
+            'choices' => $choices,
+        );
+    }
+    return $out;
+}
 
 /**
  * Strings used by categories-manager.js. "%s" is a category name, "%d" a number.
@@ -411,6 +462,14 @@ function medbeafgallery_cm_js_strings() {
         /* translators: %s: category name */
         'renameLabel'       => __('Rename “%s”', 'medical-before-after-gallery'),
         'rename'            => __('Rename', 'medical-before-after-gallery'),
+        'edit'              => __('Edit', 'medical-before-after-gallery'),
+        /* translators: %s: category name */
+        'editLabel'         => __('Edit “%s”', 'medical-before-after-gallery'),
+        'nameLabel'         => __('Name', 'medical-before-after-gallery'),
+        'descriptionLabel'  => __('Description (optional)', 'medical-before-after-gallery'),
+        'descriptionHelp'   => __('A sentence or two about this treatment. The Pro treatment hub shows it at the top of the treatment’s page.', 'medical-before-after-gallery'),
+        /* translators: %s: category name */
+        'saved'             => __('“%s” saved.', 'medical-before-after-gallery'),
         'newName'           => __('New name', 'medical-before-after-gallery'),
         'save'              => __('Save', 'medical-before-after-gallery'),
         'cancel'            => __('Cancel', 'medical-before-after-gallery'),
@@ -515,6 +574,7 @@ function medbeafgallery_cm_ajax() {
     $caps = array(
         'add'     => 'manage_terms',
         'rename'  => 'edit_terms',
+        'edit'    => 'edit_terms',
         'move'    => 'edit_terms',
         'reorder' => 'edit_terms',
         'image'   => 'edit_terms',
@@ -806,6 +866,57 @@ function medbeafgallery_cm_op_rename() {
 }
 
 /**
+ * op=edit — name, description and any add-on fields, from the Edit panel.
+ *
+ * @return array|WP_Error
+ */
+function medbeafgallery_cm_op_edit() {
+    $id   = medbeafgallery_cm_post_int('id');
+    $node = medbeafgallery_cm_find($id);
+    if (is_wp_error($node)) {
+        return $node;
+    }
+    $name = medbeafgallery_cm_post_name();
+    if (is_wp_error($name)) {
+        return $name;
+    }
+    if (medbeafgallery_cm_name_taken($name, (int) $node['parent'], $id)) {
+        return medbeafgallery_cm_duplicate_error($name);
+    }
+    // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in medbeafgallery_cm_ajax()
+    $description = isset($_POST['description']) ? sanitize_textarea_field(wp_unslash($_POST['description'])) : null;
+    if (null !== $description && (function_exists('mb_strlen') ? mb_strlen($description) : strlen($description)) > 1000) {
+        return new WP_Error('medbeafgallery_cm_description', __('Please keep the description under 1,000 characters.', 'medical-before-after-gallery'));
+    }
+
+    // Only the name and description change; the slug (used in links and filters) stays.
+    $args = array('name' => $name);
+    if (null !== $description) {
+        $args['description'] = $description;
+    }
+    $result = wp_update_term($id, 'medbeafgallery_category', $args);
+    if (is_wp_error($result)) {
+        return $result;
+    }
+
+    // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in medbeafgallery_cm_ajax()
+    $extra = isset($_POST['extra']) ? json_decode(wp_unslash($_POST['extra']), true) : array();
+    if (is_array($extra) && $extra) {
+        /**
+         * Save an add-on's fields from the Edit panel. Values are untrusted:
+         * sanitize each one. Capability and nonce are already checked.
+         *
+         * @since 1.5.0
+         * @param int   $term_id The category.
+         * @param array $extra   Field key => submitted value.
+         */
+        do_action('medbeafgallery_categories_manager_save_extra', $id, $extra);
+    }
+
+    return array('row' => medbeafgallery_cm_row_by_id($id));
+}
+
+/**
  * op=move
  *
  * @return array|WP_Error
@@ -992,7 +1103,7 @@ function medbeafgallery_categories_manager_page() {
 
         <noscript>
             <div class="notice notice-info inline">
-                <p><?php esc_html_e('Turn on JavaScript to add, rename, reorder or delete categories on this screen. You can also use the standard WordPress categories screen (link below).', 'medical-before-after-gallery'); ?></p>
+                <p><?php esc_html_e('Turn on JavaScript to add, edit, reorder or delete categories on this screen. You can also use the standard WordPress categories screen (link below).', 'medical-before-after-gallery'); ?></p>
             </div>
         </noscript>
 
@@ -1083,10 +1194,12 @@ function medbeafgallery_categories_manager_page() {
             <span class="screen-reader-text" id="medbeafgallery-cm-reorder-hint"><?php esc_html_e('Drag, or press the Up and Down arrow keys, to change the order.', 'medical-before-after-gallery'); ?></span>
         </div>
 
-        <p class="medbeafgallery-cm-footer">
-            <span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>
-            <a href="<?php echo esc_url($advanced); ?>"><?php esc_html_e('Advanced: open the standard WordPress categories screen', 'medical-before-after-gallery'); ?></a>
-        </p>
+        <?php /* Everything is edited on this screen; WordPress's own term screen is only offered without JavaScript. */ ?>
+        <noscript>
+            <p class="medbeafgallery-cm-footer">
+                <a href="<?php echo esc_url($advanced); ?>"><?php esc_html_e('Open the standard WordPress categories screen', 'medical-before-after-gallery'); ?></a>
+            </p>
+        </noscript>
     </div>
     <?php
 }

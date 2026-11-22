@@ -944,8 +944,8 @@ function medbeafgallery_output_custom_colors() {
             background: var(--medbeafgallery-primary-20) !important;
         }
 
-        /* Focus States */
-        .medbeafgallery-carousel-item:focus,
+        /* Focus States (keyboard only: a mouse click must not leave a box around the tile) */
+        .medbeafgallery-carousel-item:focus-visible,
         .medbeafgallery-gallery-item:focus-visible,
         .medbeafgallery-tab:focus-visible,
         .medbeafgallery-modal-prev:focus-visible,
@@ -954,7 +954,7 @@ function medbeafgallery_output_custom_colors() {
             outline: 2px solid var(--medbeafgallery-primary-solid) !important;
         }
 
-        .medbeafgallery-carousel-item:focus {
+        .medbeafgallery-carousel-item:focus-visible {
             border-color: var(--medbeafgallery-primary-solid) !important;
             box-shadow: 0 0 0 3px var(--medbeafgallery-primary-10) !important;
         }
