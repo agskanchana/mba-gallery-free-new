@@ -41,9 +41,10 @@ The optional [Pro add-on](https://medicalbeforeaftergallery.com/) adds:
 * Case filters (age, gender, procedure and your own), search, sort, filter by doctor, shareable links
 * Masonry layout plus Spotlight, Procedure rows, Editorial and Uncropped layouts, style presets, slider and photo cards
 * Case-window styles: Cinema, Drawer, Comparison desk with a linked magnifier, Case story, and a swipeable story mode on phones
-* Two more category styles: text tabs, and photo pills showing a small result photo and the case count for each category
-* Single-case embed for procedure pages and blog posts, in side-by-side, stacked or compact card layouts
-* Progress timeline with real, dated photos (6 weeks, 3 months, 1 year…)
+* Eight more category styles — tabs, photo pills, treatment cards, area then treatment, side menu, search first, icon chips and a filter bar — with 92 icons to choose from (among them a dental set: implants, crowns, veneers, braces, aligners, whitening…) or your own
+* Treatment hub, "concern first" and doctor-portfolio page structures, collections, and compare two cases side by side
+* Single-case embed for procedure pages and blog posts, in side-by-side, stacked or compact card layouts, and a category carousel embed
+* Progress timeline with real, dated photos (6 weeks, 3 months, 1 year…), in every case window and in the single-case embed
 * "Find by area" body and face map, and "Help me choose" guided search
 * Ghost camera for matching after photos, a photo line-up tool, and transformation reels for social media
 * Watermarks that never touch your original photos, a sensitive-content notice, annotations with a "What to notice" tour
@@ -72,14 +73,44 @@ The optional [Pro add-on](https://medicalbeforeaftergallery.com/) adds:
 
 == Frequently Asked Questions ==
 
+= How do I add a before and after gallery to a page? =
+Add your cases under Medical Before After Gallery, give each one a category, then put the shortcode `[medbeafgallery]` on any page or post. Options go in the shortcode, for example `[medbeafgallery category_style="buttons" card_style="reveal" items_per_page="9"]`.
+
+= Does it work with the block editor, Elementor or Divi? =
+It works wherever WordPress runs shortcodes: the block editor's Shortcode block, the classic editor, and page builders through their shortcode or text modules.
+
+= Which practices is it for? =
+Any practice that shows treatment results: plastic and cosmetic surgery, dermatology, dentistry and orthodontics, hair restoration, med spas and weight-loss clinics. Categories, doctors and case details are yours to name.
+
+= How many cases can I show for free? =
+Up to 12 cases in up to 4 categories. The Pro add-on removes both limits.
+
+= Are my photos cropped or changed? =
+No. The case window and the hover-reveal cards show each photo whole, over a soft blurred copy of itself instead of black bars. The optional cropping tool saves a new copy, and the Pro add-on's watermarks are separate copies too; your originals are never touched.
+
+= Can I show which doctor treated each case? =
+Yes. Add your doctors under Doctors (photo, credentials, location, profile link) and choose one in each case; the case window shows a doctor card. The Pro add-on adds filtering by doctor and doctor portfolio pages.
+
+= Can I show progress photos, not just before and after? =
+With the Pro add-on: add dated stage photos to a case (for example 3 months, 6 months) and visitors step through them on a timeline in the case window and in the single-case embed.
+
+= Can I warn visitors before they see sensitive photos? =
+With the Pro add-on: a sensitive-content notice, either once for the whole page or photo by photo, and watermarks on the photos visitors see.
+
+= Does it collect visitor data or send photos anywhere? =
+No. Photos stay in your WordPress Media Library and the gallery sends nothing to third parties. You remain responsible for your patients' consent to publish their photos.
+
+= Will it slow down my site? =
+Its scripts and styles load only on pages that show a gallery, and cards use a properly sized thumbnail instead of the full photo.
+
 = Can I customize the colors? =
 Yes. Pick a solid colour or a gradient under Design in the gallery settings.
 
 = Does it work on mobile devices? =
 Yes. Cards, the comparison slider and the case window are built for touch screens, and the hover-reveal cards use a press-and-hold on phones.
 
-= Are my original photos changed? =
-No. Cropping saves a new copy, and the Pro add-on's watermarks are separate copies too.
+= Is it translation-ready? =
+Yes. The plugin's text can be translated (text domain `medical-before-after-gallery`).
 
 = What happens to my cases if I delete the plugin? =
 They are kept, unless you tick "Also delete all cases, categories and their images" under Data & Uninstall first.
