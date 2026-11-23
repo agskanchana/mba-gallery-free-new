@@ -905,3 +905,254 @@ a.medbeafgallery-cm-count {
     display: flex;
     gap: 8px;
 }
+
+/* "All cases" Edit panel (add-on fields only). */
+.medbeafgallery-cm-all.is-editing {
+    align-items: flex-start;
+}
+
+.medbeafgallery-cm-all.is-editing .medbeafgallery-cm-actions {
+    display: none;
+}
+
+.medbeafgallery-cm-all .medbeafgallery-cm-panel .medbeafgallery-cm-panel-note {
+    margin: 2px 0 0;
+}
+
+/* Add-on fields: grid choice (e.g. Pro's icons), image and toggle. */
+.medbeafgallery-cm-choice-field legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+}
+
+.medbeafgallery-cm-chosen {
+    font-weight: 400;
+    color: var(--medbeafgallery-cm-muted);
+}
+
+.medbeafgallery-cm-grid-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    margin: 0 0 8px;
+}
+
+.medbeafgallery-cm-grid-search {
+    flex: 0 1 260px;
+    min-height: 34px;
+}
+
+.medbeafgallery-cm-grid-status {
+    color: var(--medbeafgallery-cm-muted);
+}
+
+.medbeafgallery-cm-grid-pinned {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 8px;
+}
+
+.medbeafgallery-cm-grid-scroll {
+    max-height: 292px;
+    overflow-y: auto;
+    padding: 2px 4px 4px 2px;
+    border: 1px solid var(--medbeafgallery-cm-line);
+    border-radius: 8px;
+    background: var(--medbeafgallery-cm-soft);
+}
+
+.medbeafgallery-cm-grid-group {
+    padding: 6px 6px 4px;
+}
+
+.medbeafgallery-cm-grid-title {
+    margin: 0 0 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--medbeafgallery-cm-muted);
+}
+
+.medbeafgallery-cm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 40px);
+    gap: 4px;
+}
+
+.medbeafgallery-cm-tile {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 40px;
+    height: 40px;
+    box-sizing: border-box;
+    border: 1px solid var(--medbeafgallery-cm-line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--medbeafgallery-cm-text);
+    cursor: pointer;
+}
+
+.medbeafgallery-cm-tile[hidden],
+.medbeafgallery-cm-grid-group[hidden],
+.medbeafgallery-cm-image-field[hidden],
+.medbeafgallery-cm-toggle-field[hidden],
+.medbeafgallery-cm-choice-field[hidden],
+.medbeafgallery-cm-image-preview[hidden],
+.medbeafgallery-cm-image-none[hidden] {
+    display: none;
+}
+
+.medbeafgallery-cm-tile.is-named {
+    width: auto;
+    padding: 0 14px 0 9px;
+    border-radius: 999px;
+}
+
+.medbeafgallery-cm-tile input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+}
+
+.medbeafgallery-cm-tile:hover {
+    border-color: var(--medbeafgallery-cm-accent);
+}
+
+/* The current choice: filled with the accent colour. */
+.medbeafgallery-cm-tile:has(input:checked) {
+    border-color: var(--medbeafgallery-cm-accent);
+    background: var(--medbeafgallery-cm-accent);
+    color: #fff;
+    box-shadow: 0 0 0 1px var(--medbeafgallery-cm-accent);
+}
+
+.medbeafgallery-cm-tile:has(input:focus-visible) {
+    outline: 2px solid var(--medbeafgallery-cm-accent);
+    outline-offset: 2px;
+}
+
+.medbeafgallery-cm-tile-art {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    line-height: 0;
+}
+
+.medbeafgallery-cm-tile-art svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Image previews: tinted ones are a mask in the text colour. */
+.medbeafgallery-cm-img {
+    display: block;
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.medbeafgallery-cm-img.is-tint {
+    background: currentColor;
+    -webkit-mask: var(--medbeafgallery-cm-img) center / contain no-repeat;
+    mask: var(--medbeafgallery-cm-img) center / contain no-repeat;
+}
+
+.medbeafgallery-cm-image-field,
+.medbeafgallery-cm-toggle-field {
+    display: grid;
+    gap: 6px;
+}
+
+.medbeafgallery-cm-field-label {
+    font-weight: 600;
+    color: var(--medbeafgallery-cm-text);
+}
+
+.medbeafgallery-cm-image-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.medbeafgallery-cm-image-preview {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--medbeafgallery-cm-line);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--medbeafgallery-cm-accent) 10%, #fff);
+    color: var(--medbeafgallery-cm-accent-dark);
+}
+
+.medbeafgallery-cm-image-preview .medbeafgallery-cm-img {
+    width: 24px;
+    height: 24px;
+}
+
+.medbeafgallery-cm-image-none {
+    color: var(--medbeafgallery-cm-muted);
+}
+
+.medbeafgallery-cm-toggle-field label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--medbeafgallery-cm-text);
+}
+
+.medbeafgallery-cm-toggle-field input[type="checkbox"] {
+    margin: 0;
+}
+
+@media screen and (max-width: 782px) {
+    .medbeafgallery-cm-grid {
+        grid-template-columns: repeat(auto-fill, 44px);
+    }
+
+    .medbeafgallery-cm-tile {
+        width: 44px;
+        height: 44px;
+    }
+
+    .medbeafgallery-cm-tile.is-named {
+        width: auto;
+    }
+
+    .medbeafgallery-cm-grid-search {
+        flex: 1 1 100%;
+        min-height: 44px;
+    }
+
+    .medbeafgallery-cm-grid-scroll {
+        max-height: 52vh;
+    }
+
+    /* The "All cases" panel gets the full width under its thumbnail. */
+    .medbeafgallery-cm-all.is-editing {
+        flex-wrap: wrap;
+    }
+
+    .medbeafgallery-cm-all.is-editing .medbeafgallery-cm-main {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .medbeafgallery-cm-edit-buttons .button,
+    .medbeafgallery-cm-image-row .button {
+        min-height: 44px;
+    }
+}

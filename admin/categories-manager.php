@@ -10,7 +10,8 @@
  *
  * The system term "All" (option `medbeafgallery_all_category_id`) is never
  * listed, offered as a parent, renamed, moved or deleted here — only its tile
- * image can be changed.
+ * image and the add-on fields flagged 'all' (e.g. Pro's icon) can be changed,
+ * through op=all_edit.
  *
  * The integrator registers the page:
  *   add_submenu_page('medbeafgallery-gallery', …, 'manage_categories',
@@ -284,6 +285,8 @@ function medbeafgallery_cm_all_data() {
         'id'        => $all_id,
         'image_id'  => $image ? $image_id : 0,
         'image_url' => $image ? $image : '',
+        /** This filter is documented in medbeafgallery_cm_row_data(). */
+        'extra'     => (array) apply_filters('medbeafgallery_categories_manager_row_extra', array(), $term),
     );
 }
 
@@ -401,9 +404,32 @@ function medbeafgallery_cm_enqueue($hook_suffix) {
 add_action('admin_enqueue_scripts', 'medbeafgallery_cm_enqueue');
 
 /**
- * Extra fields an add-on shows in the Edit panel. Each field:
- * key, label, type ('choice'), help, choices [ value, label, svg ].
- * The SVG markup goes through the plugin's SVG allow-list.
+ * Field types the Edit panel understands. An add-on can check for a type
+ * before offering a field that needs it (unknown types are skipped).
+ *
+ * @since 1.5.0
+ * @return string[]
+ */
+function medbeafgallery_cm_field_types() {
+    return array('choice', 'image', 'toggle');
+}
+
+/**
+ * Extra fields an add-on shows in the Edit panel. Every field has key, label,
+ * help, type, and optionally:
+ *   all      (bool)  also offered for the "All cases" tile;
+ *   show_if  { field, value } shown only while another field has that value.
+ * Per type:
+ *   choice   choices [ value, label, svg, group?, keywords?, pinned?, opens? ]
+ *            display ('list' | 'grid'), groups [ key, label ], search (the
+ *            filter box's label; '' = no box), auto_from (row value naming the
+ *            choice whose icon the '' choice previews);
+ *   image    an attachment from the Media Library — mimes [], tint_field
+ *            (a toggle key: preview the image tinted while it is on);
+ *   toggle   a checkbox — default (bool).
+ * Older versions knew only 'choice' with value, label and svg; they skip
+ * fields without choices and ignore the other keys. The SVG markup goes
+ * through the plugin's SVG allow-list; everything else is plain text.
  *
  * @return array[]
  */
@@ -415,29 +441,117 @@ function medbeafgallery_cm_extra_fields() {
     $fields = apply_filters('medbeafgallery_categories_manager_fields', array());
     $out    = array();
     foreach ((array) $fields as $field) {
-        if (!is_array($field) || empty($field['key']) || empty($field['choices']) || !is_array($field['choices'])) {
+        if (!is_array($field) || empty($field['key'])) {
             continue;
         }
-        $choices = array();
-        foreach ($field['choices'] as $choice) {
-            if (!is_array($choice) || !isset($choice['value'], $choice['label'])) {
-                continue;
-            }
-            $choices[] = array(
-                'value' => sanitize_key((string) $choice['value']),
-                'label' => wp_strip_all_tags((string) $choice['label']),
-                'svg'   => isset($choice['svg']) ? wp_kses((string) $choice['svg'], medbeafgallery_allowed_svg_html()) : '',
+        $type = isset($field['type']) ? sanitize_key((string) $field['type']) : 'choice';
+        if (!in_array($type, medbeafgallery_cm_field_types(), true)) {
+            continue;
+        }
+        $clean = array(
+            'key'   => sanitize_key((string) $field['key']),
+            'label' => wp_strip_all_tags(isset($field['label']) ? (string) $field['label'] : ''),
+            'help'  => wp_strip_all_tags(isset($field['help']) ? (string) $field['help'] : ''),
+            'type'  => $type,
+            'all'   => !empty($field['all']),
+        );
+        if (isset($field['show_if']['field'], $field['show_if']['value']) && is_array($field['show_if'])) {
+            $clean['show_if'] = array(
+                'field' => sanitize_key((string) $field['show_if']['field']),
+                'value' => sanitize_key((string) $field['show_if']['value']),
             );
         }
-        $out[] = array(
-            'key'     => sanitize_key((string) $field['key']),
-            'label'   => wp_strip_all_tags(isset($field['label']) ? (string) $field['label'] : ''),
-            'help'    => wp_strip_all_tags(isset($field['help']) ? (string) $field['help'] : ''),
-            'type'    => 'choice',
-            'choices' => $choices,
-        );
+
+        if ('choice' === $type) {
+            if (empty($field['choices']) || !is_array($field['choices'])) {
+                continue;
+            }
+            $choices = array();
+            foreach ($field['choices'] as $choice) {
+                if (!is_array($choice) || !isset($choice['value'], $choice['label'])) {
+                    continue;
+                }
+                $choices[] = array(
+                    'value'    => sanitize_key((string) $choice['value']),
+                    'label'    => wp_strip_all_tags((string) $choice['label']),
+                    'svg'      => isset($choice['svg']) ? wp_kses((string) $choice['svg'], medbeafgallery_allowed_svg_html()) : '',
+                    'group'    => isset($choice['group']) ? sanitize_key((string) $choice['group']) : '',
+                    'keywords' => isset($choice['keywords']) ? wp_strip_all_tags((string) $choice['keywords']) : '',
+                    'pinned'   => !empty($choice['pinned']),
+                    'opens'    => isset($choice['opens']) ? sanitize_key((string) $choice['opens']) : '',
+                );
+            }
+            $groups = array();
+            if (!empty($field['groups']) && is_array($field['groups'])) {
+                foreach ($field['groups'] as $group) {
+                    if (is_array($group) && isset($group['key'], $group['label'])) {
+                        $groups[] = array(
+                            'key'   => sanitize_key((string) $group['key']),
+                            'label' => wp_strip_all_tags((string) $group['label']),
+                        );
+                    }
+                }
+            }
+            $clean['choices']   = $choices;
+            $clean['display']   = (isset($field['display']) && 'grid' === $field['display']) ? 'grid' : 'list';
+            $clean['groups']    = $groups;
+            $clean['search']    = isset($field['search']) && is_string($field['search']) ? wp_strip_all_tags($field['search']) : '';
+            $clean['auto_from'] = isset($field['auto_from']) ? sanitize_key((string) $field['auto_from']) : '';
+        } elseif ('image' === $type) {
+            $mimes = array();
+            foreach (isset($field['mimes']) ? (array) $field['mimes'] : array() as $mime) {
+                $mime = sanitize_mime_type((string) $mime);
+                if (0 === strpos($mime, 'image/')) {
+                    $mimes[] = $mime;
+                }
+            }
+            $clean['mimes']      = $mimes ? $mimes : array('image');
+            $clean['tint_field'] = isset($field['tint_field']) ? sanitize_key((string) $field['tint_field']) : '';
+        } elseif ('toggle' === $type) {
+            $clean['default'] = !isset($field['default']) || (bool) $field['default'];
+        }
+        $out[] = $clean;
     }
     return $out;
+}
+
+/**
+ * Submitted add-on values from POST 'extra' (JSON), checked by the add-on
+ * before anything is saved.
+ *
+ * @param int  $term_id  The category.
+ * @param bool $all_only Keep only the fields offered for "All cases".
+ * @return array|WP_Error Field key => value.
+ */
+function medbeafgallery_cm_post_extra($term_id, $all_only = false) {
+    // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in medbeafgallery_cm_ajax()
+    $extra = isset($_POST['extra']) && is_string($_POST['extra']) ? json_decode(wp_unslash($_POST['extra']), true) : array();
+    $extra = is_array($extra) ? $extra : array();
+    if ($all_only) {
+        $keys = array();
+        foreach (medbeafgallery_cm_extra_fields() as $field) {
+            if (!empty($field['all'])) {
+                $keys[$field['key']] = true;
+            }
+        }
+        $extra = array_intersect_key($extra, $keys);
+    }
+    if ($extra) {
+        /**
+         * Refuse the add-on values before anything is saved: return a
+         * WP_Error whose message the screen shows. Values are untrusted.
+         *
+         * @since 1.5.0
+         * @param WP_Error|null $error   Null, or an earlier add-on's error.
+         * @param int           $term_id The category.
+         * @param array         $extra   Field key => submitted value.
+         */
+        $error = apply_filters('medbeafgallery_categories_manager_extra_error', null, $term_id, $extra);
+        if (is_wp_error($error)) {
+            return $error;
+        }
+    }
+    return $extra;
 }
 
 /**
@@ -517,6 +631,21 @@ function medbeafgallery_cm_js_strings() {
         'mediaButton'       => __('Use this image', 'medical-before-after-gallery'),
         'allTitle'          => __('All cases', 'medical-before-after-gallery'),
         'allNote'           => __('Always shown first in the gallery.', 'medical-before-after-gallery'),
+        'allEdit'           => __('Edit', 'medical-before-after-gallery'),
+        'allEditLabel'      => __('Edit the “All cases” tile', 'medical-before-after-gallery'),
+        'allEditNote'       => __('“All cases” always comes first and cannot be renamed, moved or deleted.', 'medical-before-after-gallery'),
+        'allSaved'          => __('“All cases” saved.', 'medical-before-after-gallery'),
+        /* translators: %s: name of the chosen option, e.g. an icon */
+        'chosen'            => __('Chosen: %s', 'medical-before-after-gallery'),
+        'noMatch'           => __('Nothing matches. Try another word.', 'medical-before-after-gallery'),
+        /* translators: %d: number of matching options */
+        'matchesOne'        => __('%d match', 'medical-before-after-gallery'),
+        /* translators: %d: number of matching options */
+        'matchesMany'       => __('%d matches', 'medical-before-after-gallery'),
+        'imageChoose'       => __('Choose image', 'medical-before-after-gallery'),
+        'imageChange'       => __('Change image', 'medical-before-after-gallery'),
+        'imageNone'         => __('No image chosen yet.', 'medical-before-after-gallery'),
+        'imageMediaTitle'   => __('Choose an image', 'medical-before-after-gallery'),
         'allImageChoose'    => __('Choose an image for the “All cases” tile', 'medical-before-after-gallery'),
         'allImageChange'    => __('Change the image for the “All cases” tile', 'medical-before-after-gallery'),
         'allImageRemove'    => __('Remove the image of the “All cases” tile', 'medical-before-after-gallery'),
@@ -556,8 +685,9 @@ function medbeafgallery_cm_js_strings() {
 /**
  * AJAX: every write the screen makes.
  *
- * POST: nonce, op = add|rename|move|reorder|image|delete, plus per op:
+ * POST: nonce, op = add|rename|edit|move|reorder|image|delete|all_edit, plus per op:
  *   add (name, parent) · rename (id, name) · move (id, parent)
+ *   edit (id, name, description, extra) · all_edit (extra: add-on fields only)
  *   reorder (parent, ids[]) · image (id, attachment_id; 0 removes) · delete (id)
  *
  * Success: { row?, id?, rows, all, usage, usageText }
@@ -572,13 +702,14 @@ function medbeafgallery_cm_ajax() {
     $op = isset($_POST['op']) ? sanitize_key(wp_unslash($_POST['op'])) : '';
 
     $caps = array(
-        'add'     => 'manage_terms',
-        'rename'  => 'edit_terms',
-        'edit'    => 'edit_terms',
-        'move'    => 'edit_terms',
-        'reorder' => 'edit_terms',
-        'image'   => 'edit_terms',
-        'delete'  => 'delete_terms',
+        'add'      => 'manage_terms',
+        'rename'   => 'edit_terms',
+        'edit'     => 'edit_terms',
+        'move'     => 'edit_terms',
+        'reorder'  => 'edit_terms',
+        'image'    => 'edit_terms',
+        'delete'   => 'delete_terms',
+        'all_edit' => 'edit_terms',
     );
     if (!isset($caps[$op])) {
         wp_send_json_error(array('message' => __('Unknown action.', 'medical-before-after-gallery')), 400);
@@ -888,6 +1019,11 @@ function medbeafgallery_cm_op_edit() {
     if (null !== $description && (function_exists('mb_strlen') ? mb_strlen($description) : strlen($description)) > 1000) {
         return new WP_Error('medbeafgallery_cm_description', __('Please keep the description under 1,000 characters.', 'medical-before-after-gallery'));
     }
+    // Checked before anything is saved, so a refused value changes nothing.
+    $extra = medbeafgallery_cm_post_extra($id);
+    if (is_wp_error($extra)) {
+        return $extra;
+    }
 
     // Only the name and description change; the slug (used in links and filters) stays.
     $args = array('name' => $name);
@@ -899,9 +1035,7 @@ function medbeafgallery_cm_op_edit() {
         return $result;
     }
 
-    // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in medbeafgallery_cm_ajax()
-    $extra = isset($_POST['extra']) ? json_decode(wp_unslash($_POST['extra']), true) : array();
-    if (is_array($extra) && $extra) {
+    if ($extra) {
         /**
          * Save an add-on's fields from the Edit panel. Values are untrusted:
          * sanitize each one. Capability and nonce are already checked.
@@ -914,6 +1048,32 @@ function medbeafgallery_cm_op_edit() {
     }
 
     return array('row' => medbeafgallery_cm_row_by_id($id));
+}
+
+/**
+ * op=all_edit — the add-on fields offered for the "All cases" tile, nothing
+ * else: the term's name, slug, parent and description are never touched.
+ *
+ * @return array|WP_Error
+ */
+function medbeafgallery_cm_op_all_edit() {
+    $all_id = medbeafgallery_cm_all_id();
+    $term   = $all_id ? get_term($all_id, 'medbeafgallery_category') : null;
+    if (!$term || is_wp_error($term)) {
+        return new WP_Error('medbeafgallery_cm_missing', __('That category no longer exists. The list has been refreshed.', 'medical-before-after-gallery'));
+    }
+    if (medbeafgallery_cm_post_int('id') !== $all_id) {
+        return new WP_Error('medbeafgallery_cm_all', __('The “All cases” tile cannot be changed this way.', 'medical-before-after-gallery'));
+    }
+    $extra = medbeafgallery_cm_post_extra($all_id, true);
+    if (is_wp_error($extra)) {
+        return $extra;
+    }
+    if ($extra) {
+        /** This action is documented in medbeafgallery_cm_op_edit(). */
+        do_action('medbeafgallery_categories_manager_save_extra', $all_id, $extra);
+    }
+    return array('id' => $all_id);
 }
 
 /**

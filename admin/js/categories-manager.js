@@ -439,6 +439,11 @@
         }
 
         var actions = el('div', { className: 'medbeafgallery-cm-actions' });
+        els.all.classList.remove('is-editing');
+        if (can.edit && fieldsFor('all').length) {
+            // Only the add-on fields offered for "All" (Pro: its icon).
+            actions.appendChild(linkButton(t.allEdit || t.edit, 'edit', t.allEditLabel, openAllPanel));
+        }
         if (can.edit && all.image_url) {
             actions.appendChild(el('button', {
                 type: 'button',
@@ -456,7 +461,8 @@
                 el('span', { className: 'medbeafgallery-cm-name-static', text: t.allTitle }),
                 el('span', { className: 'medbeafgallery-cm-badge', text: t.allNote })
             ]),
-            actions.childNodes.length ? actions : null
+            actions.childNodes.length ? actions : null,
+            el('div', { className: 'medbeafgallery-cm-panel', hidden: true })
         ]));
     }
 
@@ -746,6 +752,7 @@
         var rowEl = item.querySelector(':scope > .medbeafgallery-cm-row');
         var panel = rowEl.querySelector('.medbeafgallery-cm-panel');
         closePanels(panel);
+        closeAllPanel();
         panel.textContent = '';
         panel.hidden = false;
         rowEl.classList.remove('is-editing', 'is-confirming');
@@ -785,33 +792,482 @@
         return 'medbeafgallery-cm-' + prefix + '-' + id;
     }
 
-    // The Edit panel. Add-on fields come from cfg.fields (type "choice": a row
-    // of labelled options, each with an optional icon).
-    function buildChoiceField(field, row) {
-        var current = row.extra && row.extra[field.key] !== undefined ? String(row.extra[field.key]) : '';
-        var name = inputId('field-' + field.key, row.id);
-        var set = el('fieldset', { className: 'medbeafgallery-cm-choice-field', 'data-field': field.key });
-        set.appendChild(el('legend', { text: field.label }));
-        var options = el('div', { className: 'medbeafgallery-cm-choices' });
-        (field.choices || []).forEach(function (choice) {
+    /* ------------------------------------------------------------------ */
+    /* Add-on fields (cfg.fields, medbeafgallery_cm_extra_fields())        */
+    /* ------------------------------------------------------------------ */
+
+    // Types this screen draws; unknown ones (from a newer add-on) are skipped.
+    var FIELD_TYPES = ['choice', 'image', 'toggle'];
+
+    // The add-on fields for a category row, or for "All cases" ('all').
+    function fieldsFor(scope) {
+        return (cfg.fields || []).filter(function (field) {
+            if (!field || FIELD_TYPES.indexOf(field.type) === -1) {
+                return false;
+            }
+            return scope !== 'all' || !!field.all;
+        });
+    }
+
+    // A url("…") value for CSS: characters that would end the string are encoded.
+    function cssUrl(url) {
+        return 'url("' + String(url).replace(/["'()\\\s]/g, function (c) {
+            return '%' + ('0' + c.charCodeAt(0).toString(16).toUpperCase()).slice(-2);
+        }) + '")';
+    }
+
+    // A small preview of an image: tinted (a mask in the text colour) or as it is.
+    function imagePreview(url, tint) {
+        if (!url) {
+            return null;
+        }
+        if (tint) {
+            var span = el('span', { className: 'medbeafgallery-cm-img is-tint', 'aria-hidden': 'true' });
+            span.style.setProperty('--medbeafgallery-cm-img', cssUrl(url));
+            return span;
+        }
+        return el('img', { className: 'medbeafgallery-cm-img', src: url, alt: '' });
+    }
+
+    function makeEmitter() {
+        var list = [];
+        return {
+            on: function (fn) { list.push(fn); },
+            emit: function () {
+                var args = arguments;
+                list.forEach(function (fn) { fn.apply(null, args); });
+            }
+        };
+    }
+
+    // type "choice": a row of labelled options, or (display "grid") a grouped,
+    // searchable grid of icon-only tiles with the pinned options first.
+    function choiceField(field, values, idBase) {
+        var current = values[field.key] !== undefined && values[field.key] !== null ? String(values[field.key]) : '';
+        var name = idBase + '-' + field.key;
+        var grid = field.display === 'grid';
+        var changed = makeEmitter();
+        var picked = makeEmitter();
+        var tiles = [];
+        var pointerValue = null;
+        var previous = current;
+        var justChanged = null; // { from, to } for the click that caused the change
+
+        var choices = field.choices || [];
+        var byValue = {};
+        choices.forEach(function (choice) { byValue[String(choice.value)] = choice; });
+
+        var set = el('fieldset', { className: 'medbeafgallery-cm-choice-field' + (grid ? ' is-grid' : ''), 'data-field': field.key });
+        var chosenNote = el('span', { className: 'medbeafgallery-cm-chosen', 'aria-hidden': 'true' });
+        set.appendChild(el('legend', {}, [el('span', { text: field.label }), grid ? chosenNote : null]));
+
+        function artFor(choice) {
+            var art = el('span', { className: grid ? 'medbeafgallery-cm-tile-art' : 'medbeafgallery-cm-choice-icon', 'aria-hidden': 'true' });
+            var svg = choice.svg;
+            // The empty choice ("Automatic") previews the option it stands for.
+            if (choice.value === '' && field.auto_from && values[field.auto_from] !== undefined && byValue[String(values[field.auto_from])]) {
+                svg = byValue[String(values[field.auto_from])].svg || svg;
+            }
+            if (svg) {
+                art.innerHTML = svg; // SVG allow-listed on the server (medbeafgallery_cm_extra_fields()).
+            }
+            return art;
+        }
+
+        function makeOption(choice, named) {
             var input = el('input', { type: 'radio', name: name, value: choice.value });
             input.checked = String(choice.value) === current;
-            var label = el('label', { className: 'medbeafgallery-cm-choice' }, [input]);
-            if (choice.svg) {
-                var art = el('span', { className: 'medbeafgallery-cm-choice-icon', 'aria-hidden': 'true' });
-                art.innerHTML = choice.svg; // SVG allow-listed on the server (medbeafgallery_cm_extra_fields()).
-                label.appendChild(art);
+            var label;
+            if (!grid) {
+                label = el('label', { className: 'medbeafgallery-cm-choice' }, [input]);
+                if (choice.svg) {
+                    label.appendChild(artFor(choice));
+                }
+                label.appendChild(el('span', { text: choice.label }));
+            } else {
+                label = el('label', {
+                    className: 'medbeafgallery-cm-tile' + (named ? ' is-named' : ''),
+                    title: named ? null : choice.label,
+                    'data-value': choice.value
+                }, [
+                    input,
+                    artFor(choice),
+                    named ? el('span', { className: 'medbeafgallery-cm-tile-name', text: choice.label }) : el('span', { className: 'screen-reader-text', text: choice.label })
+                ]);
             }
-            label.appendChild(el('span', { text: choice.label }));
-            options.appendChild(label);
-        });
-        set.appendChild(options);
+            var pointerAt = 0;
+            label.addEventListener('pointerdown', function () {
+                pointerValue = String(choice.value);
+                pointerAt = Date.now();
+            });
+            // A mouse or touch click on an option that opens something (e.g. the
+            // Media Library) opens it, also when it is already chosen. The radio
+            // gets a click however it is chosen; only one that follows a pointer
+            // press here counts. Keyboard users get the field's own button.
+            input.addEventListener('click', function () {
+                if (!choice.opens || Date.now() - pointerAt > 1500) {
+                    return;
+                }
+                pointerAt = 0;
+                window.setTimeout(function () {
+                    var value = String(choice.value);
+                    var from = justChanged && justChanged.to === value ? justChanged.from : null;
+                    if (input.checked) {
+                        picked.emit(value, true, from);
+                    }
+                }, 0);
+            });
+            input.addEventListener('change', function () {
+                if (!input.checked) {
+                    return;
+                }
+                var before = previous;
+                previous = String(choice.value);
+                justChanged = { from: before, to: previous };
+                window.setTimeout(function () { justChanged = null; }, 0);
+                syncChosen();
+                changed.emit(previous);
+                if (!choice.opens) {
+                    picked.emit(previous, pointerValue === previous, before);
+                }
+                pointerValue = null;
+            });
+            tiles.push({ label: label, input: input, choice: choice, named: named, text: '' });
+            return label;
+        }
+
+        function syncChosen() {
+            var choice = byValue[previous];
+            chosenNote.textContent = choice ? fmt(t.chosen || '%s', choice.label) : '';
+        }
+
+        var status = null;
+        var search = null;
+        if (!grid) {
+            var row = el('div', { className: 'medbeafgallery-cm-choices' });
+            choices.forEach(function (choice) { row.appendChild(makeOption(choice, false)); });
+            set.appendChild(row);
+        } else {
+            var gridId = name + '-grid';
+            if (field.search) {
+                search = el('input', {
+                    type: 'search',
+                    className: 'medbeafgallery-cm-grid-search',
+                    placeholder: field.search,
+                    'aria-label': field.search,
+                    'aria-controls': gridId,
+                    autocomplete: 'off',
+                    spellcheck: 'false'
+                });
+                status = el('span', { className: 'medbeafgallery-cm-grid-status', role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' });
+                set.appendChild(el('div', { className: 'medbeafgallery-cm-grid-tools' }, [search, status]));
+            }
+            var pinned = choices.filter(function (choice) { return choice.pinned; });
+            if (pinned.length) {
+                var pinRow = el('div', { className: 'medbeafgallery-cm-grid-pinned' });
+                pinned.forEach(function (choice) { pinRow.appendChild(makeOption(choice, true)); });
+                set.appendChild(pinRow);
+            }
+            var scroller = el('div', { className: 'medbeafgallery-cm-grid-scroll', id: gridId });
+            var groups = (field.groups || []).slice();
+            var known = {};
+            groups.forEach(function (group) { known[group.key] = true; });
+            groups.push({ key: '', label: '' }); // anything without a known group
+            groups.forEach(function (group, gi) {
+                var members = choices.filter(function (choice) {
+                    return !choice.pinned && (group.key ? choice.group === group.key : !known[choice.group]);
+                });
+                if (!members.length) {
+                    return;
+                }
+                var titleId = name + '-g' + gi;
+                var box = el('div', { className: 'medbeafgallery-cm-grid-group', role: 'group', 'aria-labelledby': group.label ? titleId : null });
+                if (group.label) {
+                    box.appendChild(el('p', { className: 'medbeafgallery-cm-grid-title', id: titleId, text: group.label }));
+                }
+                var cells = el('div', { className: 'medbeafgallery-cm-grid' });
+                members.forEach(function (choice) {
+                    var label = makeOption(choice, false);
+                    tiles[tiles.length - 1].text = [choice.label, choice.keywords || '', group.label].join(' ').toLowerCase();
+                    cells.appendChild(label);
+                });
+                box.appendChild(cells);
+                scroller.appendChild(box);
+            });
+            set.appendChild(scroller);
+
+            var filter = function () {
+                var words = search ? search.value.trim().toLowerCase().split(/\s+/).filter(Boolean) : [];
+                var shown = 0;
+                tiles.forEach(function (tile) {
+                    if (tile.named) {
+                        return;
+                    }
+                    var hit = words.every(function (w) { return tile.text.indexOf(w) !== -1; });
+                    tile.label.hidden = !hit;
+                    if (hit) {
+                        shown++;
+                    }
+                });
+                Array.prototype.forEach.call(scroller.querySelectorAll('.medbeafgallery-cm-grid-group'), function (box) {
+                    box.hidden = !box.querySelector('.medbeafgallery-cm-tile:not([hidden])');
+                });
+                scroller.hidden = shown === 0;
+                if (status) {
+                    status.textContent = words.length ? (shown ? fmt(shown === 1 ? t.matchesOne : t.matchesMany, shown) : t.noMatch) : '';
+                }
+            };
+            if (search) {
+                search.addEventListener('input', filter);
+                search.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        // Enter filters; it does not save the panel.
+                        e.preventDefault();
+                    } else if (e.key === 'Escape' && search.value) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        search.value = '';
+                        filter();
+                    }
+                });
+            }
+            syncChosen();
+        }
         if (field.help) {
             set.appendChild(el('p', { className: 'description', text: field.help }));
         }
-        return set;
+
+        return {
+            type: 'choice',
+            node: set,
+            get: function () {
+                var input = set.querySelector('input[type="radio"]:checked');
+                return input ? input.value : null;
+            },
+            set: function (value) {
+                value = value === null || value === undefined ? '' : String(value);
+                tiles.forEach(function (tile) { tile.input.checked = String(tile.choice.value) === value; });
+                previous = value;
+                syncChosen();
+                changed.emit(value);
+            },
+            setArt: function (value, node) {
+                tiles.forEach(function (tile) {
+                    if (String(tile.choice.value) !== String(value)) {
+                        return;
+                    }
+                    var art = tile.label.querySelector('.medbeafgallery-cm-tile-art, .medbeafgallery-cm-choice-icon');
+                    if (art && node) {
+                        art.textContent = '';
+                        art.appendChild(node);
+                    } else if (art) {
+                        art.parentNode.replaceChild(artFor(tile.choice), art);
+                    }
+                });
+            },
+            onChange: changed.on,
+            onPick: picked.on
+        };
     }
 
+    // type "image": an attachment from the Media Library.
+    function imageField(field, values, idBase) {
+        var start = values[field.key] && typeof values[field.key] === 'object' ? values[field.key] : null;
+        var value = { id: start && start.id ? Number(start.id) : 0, url: start && start.url ? String(start.url) : '' };
+        var tint = false;
+        var changed = makeEmitter();
+        var labelId = idBase + '-' + field.key + '-label';
+        var preview = el('span', { className: 'medbeafgallery-cm-image-preview' });
+        var button = el('button', { type: 'button', className: 'button', 'aria-describedby': labelId });
+        var none = el('span', { className: 'medbeafgallery-cm-image-none', text: t.imageNone });
+        var node = el('div', { className: 'medbeafgallery-cm-image-field', 'data-field': field.key }, [
+            el('span', { className: 'medbeafgallery-cm-field-label', id: labelId, text: field.label }),
+            el('div', { className: 'medbeafgallery-cm-image-row' }, [preview, none, hasMedia() ? button : null]),
+            field.help ? el('p', { className: 'description', text: field.help }) : null
+        ]);
+
+        function paint() {
+            preview.textContent = '';
+            var img = imagePreview(value.url, tint);
+            if (img) {
+                preview.appendChild(img);
+            }
+            preview.hidden = !img;
+            none.hidden = !!img;
+            button.textContent = value.id ? t.imageChange : t.imageChoose;
+        }
+
+        function open(onCancel) {
+            if (!hasMedia()) {
+                return;
+            }
+            var frame = window.wp.media({
+                title: field.label || t.imageMediaTitle,
+                button: { text: t.mediaButton },
+                multiple: false,
+                library: { type: field.mimes && field.mimes.length ? field.mimes : 'image' }
+            });
+            var chose = false;
+            frame.on('open', function () {
+                if (value.id) {
+                    var attachment = window.wp.media.attachment(value.id);
+                    attachment.fetch();
+                    frame.state().get('selection').reset([attachment]);
+                }
+            });
+            frame.on('select', function () {
+                var picked = frame.state().get('selection').first();
+                if (!picked) {
+                    return;
+                }
+                var data = picked.toJSON();
+                if (field.mimes && field.mimes.length && data.mime && field.mimes.indexOf(data.mime) === -1) {
+                    showError(field.help || t.imageNone);
+                    announce(field.help || t.imageNone);
+                    return;
+                }
+                var sizes = data.sizes || {};
+                var best = sizes.medium || sizes.thumbnail || sizes.full;
+                chose = true;
+                value = { id: Number(data.id), url: (best && best.url) || data.url || '' };
+                paint();
+                changed.emit(value.id);
+            });
+            frame.on('close', function () {
+                window.setTimeout(function () {
+                    if (!chose && onCancel) {
+                        onCancel();
+                    }
+                    if (document.body.contains(button)) {
+                        button.focus();
+                    }
+                }, 0);
+            });
+            frame.open();
+        }
+
+        button.addEventListener('click', function () { open(null); });
+        paint();
+
+        return {
+            type: 'image',
+            node: node,
+            get: function () { return value.id || 0; },
+            has: function () { return !!value.id; },
+            url: function () { return value.url; },
+            open: open,
+            setTint: function (on) { tint = !!on; paint(); },
+            preview: function () { return imagePreview(value.url, tint); },
+            onChange: changed.on
+        };
+    }
+
+    // type "toggle": a checkbox.
+    function toggleField(field, values, idBase) {
+        var id = idBase + '-' + field.key;
+        var helpId = id + '-help';
+        var on = values[field.key] === undefined || values[field.key] === null ? field.default !== false : !!values[field.key];
+        var changed = makeEmitter();
+        var input = el('input', { type: 'checkbox', id: id, 'aria-describedby': field.help ? helpId : null });
+        input.checked = on;
+        input.addEventListener('change', function () { changed.emit(input.checked); });
+        var node = el('div', { className: 'medbeafgallery-cm-toggle-field', 'data-field': field.key }, [
+            el('label', { 'for': id }, [input, el('span', { text: field.label })]),
+            field.help ? el('p', { className: 'description', id: helpId, text: field.help }) : null
+        ]);
+        return {
+            type: 'toggle',
+            node: node,
+            get: function () { return input.checked; },
+            onChange: changed.on
+        };
+    }
+
+    /**
+     * Builds a set of add-on fields and wires them together: show_if, an image
+     * previewed tinted while its tint toggle is on, and a choice that opens an
+     * image field (e.g. Pro's "Custom image").
+     */
+    function buildExtraFields(fields, values, idBase) {
+        values = values || {};
+        var apis = {};
+        var nodes = [];
+        fields.forEach(function (field) {
+            var api;
+            if (field.type === 'image') {
+                api = imageField(field, values, idBase);
+            } else if (field.type === 'toggle') {
+                api = toggleField(field, values, idBase);
+            } else {
+                api = choiceField(field, values, idBase);
+            }
+            apis[field.key] = api;
+            nodes.push(api.node);
+        });
+
+        fields.forEach(function (field) {
+            if (field.show_if && apis[field.show_if.field]) {
+                var ctrl = apis[field.show_if.field];
+                var sync = function () {
+                    apis[field.key].node.hidden = String(ctrl.get()) !== String(field.show_if.value);
+                };
+                ctrl.onChange(sync);
+                sync();
+            }
+            if (field.type === 'image' && field.tint_field && apis[field.tint_field] && apis[field.tint_field].type === 'toggle') {
+                var toggle = apis[field.tint_field];
+                apis[field.key].setTint(toggle.get());
+                toggle.onChange(function (on) { apis[field.key].setTint(on); });
+            }
+        });
+
+        fields.forEach(function (field) {
+            if (field.type !== 'choice') {
+                return;
+            }
+            var api = apis[field.key];
+            (field.choices || []).forEach(function (choice) {
+                var image = choice.opens ? apis[choice.opens] : null;
+                if (!image || image.type !== 'image') {
+                    return;
+                }
+                var paintTile = function () { api.setArt(choice.value, image.preview()); };
+                image.onChange(paintTile);
+                var tintField = fields.filter(function (f) { return f.key === choice.opens; })[0];
+                if (tintField && tintField.tint_field && apis[tintField.tint_field]) {
+                    apis[tintField.tint_field].onChange(paintTile);
+                }
+                paintTile();
+                api.onPick(function (value, byPointer, previous) {
+                    if (value !== String(choice.value) || !byPointer) {
+                        return;
+                    }
+                    image.open(function () {
+                        // Closed without an image: go back to the earlier choice.
+                        if (!image.has() && previous !== null && previous !== undefined) {
+                            api.set(previous);
+                        }
+                    });
+                });
+            });
+        });
+
+        return {
+            nodes: nodes,
+            collect: function () {
+                var extra = {};
+                fields.forEach(function (field) {
+                    var value = apis[field.key].get();
+                    if (value !== null && value !== undefined) {
+                        extra[field.key] = value;
+                    }
+                });
+                return extra;
+            }
+        };
+    }
+
+    // The Edit panel: name, description and the add-on fields.
     function buildRenamePanel(panel, rowEl, row, cancel) {
         rowEl.classList.add('is-editing');
         rowEl.querySelector('.medbeafgallery-cm-line').hidden = true;
@@ -822,7 +1278,7 @@
         var input = el('input', { type: 'text', id: id, className: 'regular-text', value: row.name, maxlength: '200', autocomplete: 'off' });
         var description = el('textarea', { id: descId, rows: '2', maxlength: '1000', 'aria-describedby': helpId });
         description.value = row.description || '';
-        var fields = (cfg.fields || []).filter(function (field) { return field && field.type === 'choice'; });
+        var extraFields = buildExtraFields(fieldsFor('row'), row.extra, inputId('field', row.id));
         var body = [
             el('div', { className: 'medbeafgallery-cm-edit-field' }, [
                 el('label', { 'for': id, text: t.nameLabel || t.newName }),
@@ -833,8 +1289,7 @@
                 description,
                 el('p', { className: 'description', id: helpId, text: t.descriptionHelp })
             ])
-        ];
-        fields.forEach(function (field) { body.push(buildChoiceField(field, row)); });
+        ].concat(extraFields.nodes);
         body.push(el('div', { className: 'medbeafgallery-cm-edit-buttons' }, [
             el('button', { type: 'submit', className: 'button button-primary', text: t.save }),
             el('button', { type: 'button', className: 'button', text: t.cancel, on: { click: function () { cancel('rename'); } } })
@@ -849,13 +1304,7 @@
                 input.focus();
                 return;
             }
-            var extra = {};
-            fields.forEach(function (field) {
-                var picked = form.querySelector('[data-field="' + field.key + '"] input:checked');
-                if (picked) {
-                    extra[field.key] = picked.value;
-                }
-            });
+            var extra = extraFields.collect();
             setFormBusy(form, true);
             write('edit', { id: row.id, name: name, description: description.value, extra: JSON.stringify(extra) }, {
                 success: function (data) {
@@ -878,6 +1327,76 @@
         panel.appendChild(form);
         input.focus();
         input.select();
+    }
+
+    // The "All cases" Edit panel: only the add-on fields offered for it. The
+    // server refuses every other change to "All" (op all_edit).
+    function openAllPanel() {
+        var all = state.all;
+        var panel = els.all ? els.all.querySelector('.medbeafgallery-cm-panel') : null;
+        if (!all || !panel) {
+            return;
+        }
+        closePanels(null);
+        panel.textContent = '';
+        panel.hidden = false;
+        els.all.classList.add('is-editing');
+
+        var cancel = function () {
+            panel.hidden = true;
+            panel.textContent = '';
+            els.all.classList.remove('is-editing');
+            focusPart({ id: 'all', part: 'edit' });
+        };
+        panel.onkeydown = function (e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                cancel();
+            }
+        };
+
+        var extraFields = buildExtraFields(fieldsFor('all'), all.extra, 'medbeafgallery-cm-all-field');
+        var body = [el('p', { className: 'medbeafgallery-cm-panel-note', text: t.allEditNote })].concat(extraFields.nodes);
+        body.push(el('div', { className: 'medbeafgallery-cm-edit-buttons' }, [
+            el('button', { type: 'submit', className: 'button button-primary', text: t.save }),
+            el('button', { type: 'button', className: 'button', text: t.cancel, on: { click: cancel } })
+        ]));
+        var form = el('form', { className: 'medbeafgallery-cm-edit-form', novalidate: true, 'aria-label': t.allEditLabel }, body);
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            setFormBusy(form, true);
+            write('all_edit', { id: all.id, extra: JSON.stringify(extraFields.collect()) }, {
+                success: function () {
+                    announce(t.allSaved);
+                    focusPart({ id: 'all', part: 'edit' });
+                },
+                error: function (result, changed) {
+                    if (!changed) {
+                        setFormBusy(form, false);
+                    } else {
+                        focusPart({ id: 'all', part: 'edit' });
+                    }
+                }
+            });
+        });
+        panel.appendChild(form);
+        var first = form.querySelector('input:checked') || form.querySelector('input, button');
+        if (first) {
+            first.focus();
+        }
+    }
+
+    function closeAllPanel() {
+        if (!els.all) {
+            return;
+        }
+        var panel = els.all.querySelector('.medbeafgallery-cm-panel');
+        if (panel && !panel.hidden) {
+            panel.hidden = true;
+            panel.textContent = '';
+        }
+        els.all.classList.remove('is-editing');
     }
 
     function buildAddSubPanel(panel, row, cancel) {
