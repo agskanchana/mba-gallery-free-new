@@ -48,7 +48,6 @@ The optional [Pro add-on](https://medicalbeforeaftergallery.com/) adds:
 * Ghost camera for matching after photos, a photo line-up tool, and transformation reels for social media
 * Watermarks that never touch your original photos, a sensitive-content notice, annotations with a "What to notice" tour
 * Live design preview, a setup wizard and a ready-to-publish checklist
-* AI write-ups and alt text through WordPress 7's AI connection, using your own provider key
 
 **Free Demo:** [View Free Demo](https://demo.medicalbeforeaftergallery.com/free/)
 

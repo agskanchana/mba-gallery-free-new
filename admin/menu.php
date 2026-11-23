@@ -480,7 +480,7 @@ function medbeafgallery_pro_features_page() {
                         __('"Find by Area" Body Map and "Help Me Choose"', 'medical-before-after-gallery'),
                         __('Ghost Camera, Photo Line-Up Tool and Transformation Reels', 'medical-before-after-gallery'),
                         __('Filter by Doctor', 'medical-before-after-gallery'),
-                        __('AI Write-ups and Alt Text (WordPress 7)', 'medical-before-after-gallery'),
+                        __('Eight Category Styles, with Icons You Choose', 'medical-before-after-gallery'),
                         __('Setup Wizard, Live Preview and Ready-to-Publish Checklist', 'medical-before-after-gallery'),
                     ) as $medbeafgallery_pro_only) : ?>
                     <tr class="pro-feature">

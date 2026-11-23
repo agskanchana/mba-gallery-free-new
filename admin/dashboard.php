@@ -438,7 +438,7 @@ function medbeafgallery_display_pro_overview() {
         array('dashicons-location', __('"Find by area" body map and "Help me choose"', 'medical-before-after-gallery')),
         array('dashicons-camera', __('Ghost camera, photo line-up tool and transformation reels', 'medical-before-after-gallery')),
         array('dashicons-art', __('Watermarks that never touch your originals', 'medical-before-after-gallery')),
-        array('dashicons-admin-comments', __('AI write-ups and alt text (WordPress 7)', 'medical-before-after-gallery')),
+        array('dashicons-screenoptions', __('Eight category styles, with icons you choose', 'medical-before-after-gallery')),
     );
     ?>
     <div class="medbeafgallery-admin-box medbeafgallery-pro-overview">
