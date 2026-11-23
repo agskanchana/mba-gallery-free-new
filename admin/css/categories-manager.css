@@ -1151,6 +1151,12 @@ a.medbeafgallery-cm-count {
         min-width: 0;
     }
 
+    /* So does a category being edited: about seven icon tiles a row, not four. */
+    .medbeafgallery-cm-row.is-editing .medbeafgallery-cm-main {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
     .medbeafgallery-cm-edit-buttons .button,
     .medbeafgallery-cm-image-row .button {
         min-height: 44px;
