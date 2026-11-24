@@ -39,6 +39,8 @@ The optional [Pro add-on](https://medicalbeforeaftergallery.com/) adds:
 
 * Unlimited cases and categories, multiple photo pairs (angles) per case
 * Case filters (age, gender, procedure and your own), search, sort, filter by doctor, shareable links
+* A live map: visitors point at the face, body or smile and the results appear beside it
+* Someone like you: the results closest to a visitor's gender, age and concern come first
 * Masonry layout plus Refined grid, Flip wall, Expanding strips, Open row, Spotlight, Procedure rows, Editorial, Angles and Uncropped layouts, style presets, slider, hover and switch cards
 * Case-window styles: Cinema, Drawer, Comparison desk with a linked magnifier, Case story, and a swipeable story mode on phones
 * Eight more category styles — tabs, photo pills, treatment cards, area then treatment, side menu, search first, icon chips and a filter bar — with 92 icons to choose from (among them a dental set: implants, crowns, veneers, braces, aligners, whitening…) or your own
