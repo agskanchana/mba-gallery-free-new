@@ -135,6 +135,7 @@ They are kept, unless you tick "Also delete all cases, categories and their imag
 * Added: "Hover reveal" card style (optional): the before photo wipes to the after photo on hover, keyboard focus or a press-and-hold, and plays once on the first card that scrolls into view (never for visitors who ask for reduced motion). Each photo is shown whole, over a soft blurred copy of itself — nothing is cropped away
 * Added: a blurred copy of the photo fills the case window instead of black bars (Design → Case Window Background)
 * Added: doctors — Gallery → Doctors with photo, credentials, location and profile link; choose the doctor in each case; a doctor card in the case window
+* Added: "Refined" card style (optional): portrait photos without boxes that wipe to the result, with the title and category in quiet lines under them
 * Added: shortcode options `card_style` and a working `show_filters="false"`
 * Added: category styles — Design → Category Navigation: carousel, grid, buttons or a drop-down menu (also per gallery with `category_style`)
 * Added: a simpler Categories screen — add, rename, nest, reorder by drag and drop (or Move up / Move down), choose tile images, delete with a clear warning; the gallery follows your order. WordPress's standard screen stays one click away

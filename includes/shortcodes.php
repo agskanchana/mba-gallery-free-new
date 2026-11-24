@@ -26,7 +26,7 @@ function medbeafgallery_shortcode($atts) {
         'default_category' => 'all',
         // 'false' hides the category bar and (with Pro) the filter sidebar/drawer.
         'show_filters' => 'true',
-        // '' = Design → Card Style; 'split' or 'reveal' for this gallery only.
+        // '' = Design → Card Style; 'split', 'reveal' or 'refined' for this gallery only.
         'card_style' => '',
         // '' = Design → Category Navigation; carousel|grid|buttons|dropdown (Pro
         // adds its own) for this gallery only.
@@ -39,9 +39,15 @@ function medbeafgallery_shortcode($atts) {
     $show_filters = !in_array(strtolower((string) $atts['show_filters']), array('false', '0', 'no', 'off'), true);
 
     $settings       = medbeafgallery_get_settings();
-    $card_style     = in_array($atts['card_style'], array('split', 'reveal'), true)
+    $card_style     = in_array($atts['card_style'], array('split', 'reveal', 'refined'), true)
         ? $atts['card_style']
-        : ((isset($settings['card_style']) && $settings['card_style'] === 'reveal') ? 'reveal' : 'split');
+        : (isset($settings['card_style']) && in_array($settings['card_style'], array('reveal', 'refined'), true) ? $settings['card_style'] : 'split');
+    // "Refined" is the hover reveal in another dress (portrait photos, no boxes):
+    // scripts and add-ons keep seeing 'reveal', the stylesheet gets its own class.
+    $refined_cards = 'refined' === $card_style;
+    if ($refined_cards) {
+        $card_style = 'reveal';
+    }
     $photo_backdrop = (isset($settings['photo_backdrop']) && $settings['photo_backdrop'] === 'plain') ? 'plain' : 'blur';
     $category_mode  = medbeafgallery_get_category_display_mode($atts['category_style']);
 
@@ -99,6 +105,9 @@ function medbeafgallery_shortcode($atts) {
     }
     if ($card_style === 'reveal') {
         $container_classes[] = 'medbeafgallery-cards-reveal';
+    }
+    if ($refined_cards) {
+        $container_classes[] = 'medbeafgallery-cards-refined';
     }
     /**
      * Filter the gallery root's classes. Lets an add-on style the gallery from

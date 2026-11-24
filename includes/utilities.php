@@ -282,7 +282,7 @@ function medbeafgallery_apply_design_settings($settings, $input) {
     }
     if (array_key_exists('card_style', $input)) {
         $card = sanitize_key((string) $input['card_style']);
-        $settings['card_style'] = in_array($card, array('split', 'reveal'), true) ? $card : 'split';
+        $settings['card_style'] = in_array($card, array('split', 'reveal', 'refined'), true) ? $card : 'split';
     }
     if (array_key_exists('photo_backdrop', $input)) {
         $backdrop = sanitize_key((string) $input['photo_backdrop']);
@@ -511,7 +511,8 @@ class MedBeAfGallerySettings {
         // on parent category tiles.
         'rollup_subcategory_counts' => false,
         // 'split' = before and after halves side by side (unchanged look);
-        // 'reveal' = the before photo, wiping to the after photo on hover/hold.
+        // 'reveal' = the before photo, wiping to the after photo on hover/hold;
+        // 'refined' = the same wipe on portrait photos without boxes.
         'card_style' => 'split',
         // What fills the case window around a photo that does not fill it:
         // 'blur' = a blurred, darkened copy of the photo; 'plain' = black.

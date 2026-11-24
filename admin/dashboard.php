@@ -343,6 +343,7 @@ function medbeafgallery_display_settings_form_main($settings) {
                         <select name="card_style" id="card_style">
                             <option value="split" <?php selected($settings['card_style'] ?? 'split', 'split'); ?>><?php esc_html_e('Side by side — before and after halves', 'medical-before-after-gallery'); ?></option>
                             <option value="reveal" <?php selected($settings['card_style'] ?? 'split', 'reveal'); ?>><?php esc_html_e('Hover reveal — the before photo wipes to the after photo', 'medical-before-after-gallery'); ?></option>
+                            <option value="refined" <?php selected($settings['card_style'] ?? 'split', 'refined'); ?>><?php esc_html_e('Refined — portrait photos without boxes, wiping to the result', 'medical-before-after-gallery'); ?></option>
                         </select>
                         <p class="description"><?php esc_html_e('Hover reveal shows each card\'s full before photo. Pointing at a card (or pressing and holding it on a phone) wipes to the after photo, and every card plays the wipe once when it first scrolls into view. Visitors who ask their device for reduced motion see no animation. Applies to the classic grid layout.', 'medical-before-after-gallery'); ?></p>
                     </td>
