@@ -2216,8 +2216,11 @@
 }
 
 /* Fix horizontal scroll issues */
+/* (clip, not hidden: hidden makes the body a scroll container, and then nothing on the
+   page can be position: sticky — a theme's header included.) */
 html, body {
   overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
   width: 100%;
 }
