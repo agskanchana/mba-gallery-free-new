@@ -751,6 +751,7 @@
     function openPanel(item, row, type) {
         var rowEl = item.querySelector(':scope > .medbeafgallery-cm-row');
         var panel = rowEl.querySelector('.medbeafgallery-cm-panel');
+        showError('');
         closePanels(panel);
         closeAllPanel();
         panel.textContent = '';
@@ -759,6 +760,7 @@
         rowEl.querySelector('.medbeafgallery-cm-line').hidden = false;
 
         var cancel = function (focusPartName) {
+            showError('');
             panel.hidden = true;
             panel.textContent = '';
             rowEl.classList.remove('is-editing', 'is-confirming');
@@ -943,6 +945,7 @@
 
         var status = null;
         var search = null;
+        var filter = null;
         if (!grid) {
             var row = el('div', { className: 'medbeafgallery-cm-choices' });
             choices.forEach(function (choice) { row.appendChild(makeOption(choice, false)); });
@@ -996,7 +999,7 @@
             });
             set.appendChild(scroller);
 
-            var filter = function () {
+            filter = function () {
                 var words = search ? search.value.trim().toLowerCase().split(/\s+/).filter(Boolean) : [];
                 var shown = 0;
                 tiles.forEach(function (tile) {
@@ -1004,7 +1007,8 @@
                         return;
                     }
                     var hit = words.every(function (w) { return tile.text.indexOf(w) !== -1; });
-                    tile.label.hidden = !hit;
+                    // The chosen tile stays: it is the radio group's Tab stop.
+                    tile.label.hidden = !hit && !tile.input.checked;
                     if (hit) {
                         shown++;
                     }
@@ -1012,7 +1016,7 @@
                 Array.prototype.forEach.call(scroller.querySelectorAll('.medbeafgallery-cm-grid-group'), function (box) {
                     box.hidden = !box.querySelector('.medbeafgallery-cm-tile:not([hidden])');
                 });
-                scroller.hidden = shown === 0;
+                scroller.hidden = !scroller.querySelector('.medbeafgallery-cm-tile:not([hidden])');
                 if (status) {
                     status.textContent = words.length ? (shown ? fmt(shown === 1 ? t.matchesOne : t.matchesMany, shown) : t.noMatch) : '';
                 }
@@ -1049,6 +1053,9 @@
                 tiles.forEach(function (tile) { tile.input.checked = String(tile.choice.value) === value; });
                 previous = value;
                 syncChosen();
+                if (filter) {
+                    filter(); // the tile now chosen may not match the search
+                }
                 changed.emit(value);
             },
             setArt: function (value, node) {
@@ -1337,12 +1344,14 @@
         if (!all || !panel) {
             return;
         }
+        showError('');
         closePanels(null);
         panel.textContent = '';
         panel.hidden = false;
         els.all.classList.add('is-editing');
 
         var cancel = function () {
+            showError('');
             panel.hidden = true;
             panel.textContent = '';
             els.all.classList.remove('is-editing');
@@ -1363,6 +1372,12 @@
             el('button', { type: 'button', className: 'button', text: t.cancel, on: { click: cancel } })
         ]));
         var form = el('form', { className: 'medbeafgallery-cm-edit-form', novalidate: true, 'aria-label': t.allEditLabel }, body);
+        var focusFirst = function () {
+            var first = form.querySelector('input:checked') || form.querySelector('input, button');
+            if (first) {
+                first.focus();
+            }
+        };
         form.addEventListener('submit', function (e) {
             e.preventDefault();
             setFormBusy(form, true);
@@ -1374,6 +1389,7 @@
                 error: function (result, changed) {
                     if (!changed) {
                         setFormBusy(form, false);
+                        focusFirst();
                     } else {
                         focusPart({ id: 'all', part: 'edit' });
                     }
@@ -1381,10 +1397,7 @@
             });
         });
         panel.appendChild(form);
-        var first = form.querySelector('input:checked') || form.querySelector('input, button');
-        if (first) {
-            first.focus();
-        }
+        focusFirst();
     }
 
     function closeAllPanel() {

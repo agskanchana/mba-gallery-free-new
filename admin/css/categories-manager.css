@@ -98,13 +98,24 @@
 
 /* Messages ------------------------------------------------------------- */
 
+/* Stays in view below the admin bar: the button that caused a message (an Edit
+   panel's Save) is usually far down the list. */
 .medbeafgallery-cm-notice {
+    position: sticky;
+    top: 40px;
+    z-index: 20;
     background: #fff;
     border: 1px solid var(--medbeafgallery-cm-line);
     border-left: 4px solid #d63638;
     border-radius: 6px;
     padding: 2px 14px;
     margin: 0 0 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* A name field that gets focus again is not scrolled under the message. */
+.medbeafgallery-cm-edit-form input[type="text"] {
+    scroll-margin-top: 110px;
 }
 
 .medbeafgallery-cm-notice[hidden] {
@@ -712,6 +723,10 @@ a.medbeafgallery-cm-count {
 /* Phones and small tablets (WordPress's admin breakpoint) --------------- */
 
 @media screen and (max-width: 782px) {
+    .medbeafgallery-cm-notice {
+        top: 54px;
+    }
+
     .medbeafgallery-cm-card {
         padding: 14px 14px;
     }
@@ -798,6 +813,13 @@ a.medbeafgallery-cm-count {
 
     .medbeafgallery-cm-name .dashicons {
         opacity: 1;
+    }
+}
+
+/* Here the admin bar scrolls away with the page. */
+@media screen and (max-width: 600px) {
+    .medbeafgallery-cm-notice {
+        top: 8px;
     }
 }
 

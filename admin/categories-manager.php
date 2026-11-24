@@ -424,7 +424,7 @@ function medbeafgallery_cm_field_types() {
  *            display ('list' | 'grid'), groups [ key, label ], search (the
  *            filter box's label; '' = no box), auto_from (row value naming the
  *            choice whose icon the '' choice previews);
- *   image    an attachment from the Media Library — mimes [], tint_field
+ *   image    an attachment from the Media Library — mimes [] (none: any image), tint_field
  *            (a toggle key: preview the image tinted while it is on);
  *   toggle   a checkbox — default (bool).
  * Older versions knew only 'choice' with value, label and svg; they skip
@@ -505,7 +505,7 @@ function medbeafgallery_cm_extra_fields() {
                     $mimes[] = $mime;
                 }
             }
-            $clean['mimes']      = $mimes ? $mimes : array('image');
+            $clean['mimes']      = $mimes; // Empty: any image.
             $clean['tint_field'] = isset($field['tint_field']) ? sanitize_key((string) $field['tint_field']) : '';
         } elseif ('toggle' === $type) {
             $clean['default'] = !isset($field['default']) || (bool) $field['default'];

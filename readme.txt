@@ -211,3 +211,6 @@ This plugin does not collect any personal data from your visitors. All image pro
 
 This plugin includes Cocoen (https://github.com/koenoe/cocoen) – a touch-enabled before/after image comparison slider.
 Cocoen is licensed under the MIT License (https://github.com/koenoe/cocoen/blob/main/LICENSE).
+
+This plugin includes Cropper.js 1.5.13 (https://github.com/fengyuanchen/cropperjs) – the image cropper in the case editor.
+Cropper.js is licensed under the MIT License (https://github.com/fengyuanchen/cropperjs/blob/v1.5.13/LICENSE).
