@@ -20,20 +20,42 @@ function medbeafgallery_shortcode($atts) {
     // Normalize attribute keys to lowercase
     $atts = array_change_key_case((array)$atts, CASE_LOWER);
 
-    // Get plugin settings
-    $settings = medbeafgallery_get_settings();
-
     // Default attributes - core features for free version
     $default_atts = array(
         'items_per_page' => 6,
         'default_category' => 'all',
-        'cta_text' => $settings['consultation_text'],
-        'cta_link' => $settings['consultation_url'],
-        'show_cta' => $settings['consultation_enabled'] ? 'true' : 'false',
-        'show_filters' => 'true'       // Always available
+        // 'false' hides the category bar and (with Pro) the filter sidebar/drawer.
+        'show_filters' => 'true',
+        // '' = Design → Card Style; 'split', 'reveal' or 'refined' for this gallery only.
+        'card_style' => '',
+        // '' = Design → Category Navigation; carousel|grid|buttons|dropdown (Pro
+        // adds its own) for this gallery only.
+        'category_style' => ''
     );
 
-    $atts = shortcode_atts($default_atts, $atts);
+    // The third argument runs the core `shortcode_atts_medbeafgallery` filter, so an
+    // add-on can declare attributes of its own.
+    $atts = shortcode_atts($default_atts, $atts, 'medbeafgallery');
+    $show_filters = !in_array(strtolower((string) $atts['show_filters']), array('false', '0', 'no', 'off'), true);
+
+    $settings       = medbeafgallery_get_settings();
+    $card_style     = in_array($atts['card_style'], array('split', 'reveal', 'refined'), true)
+        ? $atts['card_style']
+        : (isset($settings['card_style']) && in_array($settings['card_style'], array('reveal', 'refined'), true) ? $settings['card_style'] : 'split');
+    // "Refined" is the hover reveal in another dress (portrait photos, no boxes):
+    // scripts and add-ons keep seeing 'reveal', the stylesheet gets its own class.
+    $refined_cards = 'refined' === $card_style;
+    if ($refined_cards) {
+        $card_style = 'reveal';
+    }
+    $photo_backdrop = (isset($settings['photo_backdrop']) && $settings['photo_backdrop'] === 'plain') ? 'plain' : 'blur';
+    $category_mode  = medbeafgallery_get_category_display_mode($atts['category_style']);
+
+    // Expose this gallery's attributes to add-ons while it renders
+    // (medbeafgallery_get_current_shortcode_atts()): set first, so the
+    // shortcode_rendered action, the config filter and the
+    // before_gallery_main action all see them.
+    medbeafgallery_set_current_shortcode_atts($atts);
 
     // Enqueue necessary scripts and styles - optimized loading
     wp_enqueue_style('medbeafgallery-css', MEDBEAFGALLERY_URL . 'assets/css/gallery.css', array(), MEDBEAFGALLERY_VERSION);
@@ -52,10 +74,13 @@ function medbeafgallery_shortcode($atts) {
         'nonce' => wp_create_nonce('wp_rest'),
         'itemsPerPage' => intval($atts['items_per_page']),
         'defaultCategory' => esc_attr($atts['default_category']),
-        'ctaText' => esc_html($atts['cta_text']),
-        'ctaLink' => esc_url($atts['cta_link']),
-        'showCta' => esc_attr($atts['show_cta']),
-        'categoryDisplayMode' => 'carousel',
+        'showFilters' => $show_filters ? 'true' : 'false',
+        'cardStyle' => $card_style,
+        'photoBackdrop' => $photo_backdrop,
+        'beforeText' => __('Before', 'medical-before-after-gallery'),
+        'afterText' => __('After', 'medical-before-after-gallery'),
+        'treatedByText' => __('Treated by', 'medical-before-after-gallery'),
+        'categoryDisplayMode' => $category_mode,
         'galleryEndpoint' => 'gallery-data',
         'categoriesEndpoint' => 'categories',
         'restBase' => esc_url_raw(rest_url('medical-before-after-gallery/v1')),
@@ -74,23 +99,50 @@ function medbeafgallery_shortcode($atts) {
     // Start output buffering
     ob_start();
 
+    $container_classes = array('medbeafgallery-container');
+    if (!$show_filters) {
+        $container_classes[] = 'medbeafgallery-no-filters';
+    }
+    if ($card_style === 'reveal') {
+        $container_classes[] = 'medbeafgallery-cards-reveal';
+    }
+    if ($refined_cards) {
+        $container_classes[] = 'medbeafgallery-cards-refined';
+    }
+    /**
+     * Filter the gallery root's classes. Lets an add-on style the gallery from
+     * the first paint instead of adding a class from a script later.
+     *
+     * @since 1.5.0
+     * @param string[] $container_classes Class names.
+     * @param array    $atts              This gallery's shortcode attributes.
+     */
+    $container_classes = apply_filters('medbeafgallery_container_classes', $container_classes, $atts);
+    $container_classes = array_filter(array_map('sanitize_html_class', (array) $container_classes));
+    if (!in_array('medbeafgallery-container', $container_classes, true)) {
+        array_unshift($container_classes, 'medbeafgallery-container');
+    }
+
     ?>
-    <div class="medbeafgallery-container" id="medbeafgallery-gallery-container">
-        <!-- Gallery content -->
+    <div class="<?php echo esc_attr(implode(' ', array_unique($container_classes))); ?>" id="medbeafgallery-gallery-container">
+        <?php /* Gallery content */ ?>
         <div class="medbeafgallery-gallery-content" id="medbeafgallery-gallery-content">
-            <!-- Category Carousel - now populated by PHP -->
-            <?php echo wp_kses(medbeafgallery_render_category_carousel('carousel'), medbeafgallery_allowed_svg_html()); ?>
+            <?php
+            if ($show_filters) {
+                echo wp_kses(medbeafgallery_render_category_carousel($category_mode, $atts['default_category']), medbeafgallery_allowed_svg_html());
+            }
+            ?>
 
             <div class="medbeafgallery-gallery-layout">
                 <?php do_action('medbeafgallery_before_gallery_main'); ?>
-                <!-- Main Content Area -->
+                <?php /* Main Content Area */ ?>
                 <main class="medbeafgallery-main-content">
-                    <!-- Active Filter Tags -->
+                    <?php /* Active Filter Tags */ ?>
                     <div class="medbeafgallery-active-filters" style="display:none;">
                         <div id="medbeafgallery-filter-tags" class="medbeafgallery-filter-tags"></div>
                         <button type="button" id="medbeafgallery-clear-filters" class="medbeafgallery-clear-filters" style="display:none;"><?php esc_html_e('Clear All', 'medical-before-after-gallery'); ?></button>
                     </div>
-                    <!-- Grid Container for Gallery Items -->
+                    <?php /* Grid Container for Gallery Items */ ?>
 
 
 
@@ -102,7 +154,7 @@ function medbeafgallery_shortcode($atts) {
 
 
 
-                    <!-- Gallery Section -->
+                    <?php /* Gallery Section */ ?>
                     <div class="medbeafgallery-gallery-container"
                          data-category="<?php echo esc_attr($atts['default_category']); ?>"
                          data-per-page="<?php echo esc_attr($atts['items_per_page']); ?>">
@@ -132,14 +184,14 @@ function medbeafgallery_shortcode($atts) {
                             <p class="screen-reader-text" role="status"><?php esc_html_e('Loading gallery…', 'medical-before-after-gallery'); ?></p>
                         </div>
                         <div class="medbeafgallery-gallery-grid" id="medbeafgallery-gallery-grid" style="display: none;">
-                            <!-- Gallery items will be loaded via JavaScript -->
+                            <?php /* Gallery items will be loaded via JavaScript */ ?>
                         </div>
                         <div id="medbeafgallery-no-results" class="medbeafgallery-no-results" style="display: none;">
                             <p>No results found. Please try different filter criteria.</p>
                         </div>
                     </div>
 
-                    <!-- Pagination -->
+                    <?php /* Pagination */ ?>
                     <div class="medbeafgallery-pagination">
                         <button type="button" id="medbeafgallery-load-more" class="medbeafgallery-load-more" style="display: none;"><?php esc_html_e('Load More', 'medical-before-after-gallery'); ?></button>
                     </div>
@@ -148,22 +200,22 @@ function medbeafgallery_shortcode($atts) {
         </div>
     </div>
 
-    <!-- Modal for enlarged view -->
-    <div id="medbeafgallery-modal" class="medbeafgallery-modal" role="dialog" aria-modal="true" aria-labelledby="medbeafgallery-case-title" aria-hidden="true" tabindex="-1">
+    <?php /* Modal for enlarged view */ ?>
+    <div id="medbeafgallery-modal" class="medbeafgallery-modal<?php echo $photo_backdrop === 'blur' ? ' medbeafgallery-backdrop-blur' : ''; ?>" role="dialog" aria-modal="true" aria-labelledby="medbeafgallery-case-title" aria-hidden="true" tabindex="-1">
         <div class="medbeafgallery-modal-content">
             <div class="medbeafgallery-modal-header">
                 <h2 id="medbeafgallery-case-title">Case Study Title</h2>
 
-                <!-- Image Controls moved to header -->
+                <?php /* Image Controls moved to header */ ?>
                 <div class="medbeafgallery-image-controls" role="group" aria-label="<?php esc_attr_e('Image comparison view', 'medical-before-after-gallery'); ?>">
-                    <button type="button" class="medbeafgallery-control-btn medbeafgallery-split-view active" aria-pressed="true" title="<?php esc_attr_e('Split view', 'medical-before-after-gallery'); ?>" aria-label="<?php esc_attr_e('Split view', 'medical-before-after-gallery'); ?>">
-                        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"></line><path d="M8 8l-4 4 4 4"></path><path d="M16 16l4-4-4-4"></path></svg>
+                    <button type="button" class="medbeafgallery-control-btn medbeafgallery-split-view active" aria-pressed="true" title="<?php esc_attr_e('Slider view', 'medical-before-after-gallery'); ?>" aria-label="<?php esc_attr_e('Slider view', 'medical-before-after-gallery'); ?>">
+                        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"></line><path d="M8 8l-4 4 4 4"></path><path d="M16 16l4-4-4-4"></path></svg><span class="medbeafgallery-control-label" aria-hidden="true"><?php esc_html_e('Slider', 'medical-before-after-gallery'); ?></span>
                     </button>
                     <button type="button" class="medbeafgallery-control-btn medbeafgallery-before-view" aria-pressed="false" title="<?php esc_attr_e('Before view', 'medical-before-after-gallery'); ?>" aria-label="<?php esc_attr_e('Before view', 'medical-before-after-gallery'); ?>">
-                        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"></rect><rect x="8" y="9" width="8" height="8"></rect></svg>
+                        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"></rect><rect x="8" y="9" width="8" height="8"></rect></svg><span class="medbeafgallery-control-label" aria-hidden="true"><?php esc_html_e('Before', 'medical-before-after-gallery'); ?></span>
                     </button>
                     <button type="button" class="medbeafgallery-control-btn medbeafgallery-after-view" aria-pressed="false" title="<?php esc_attr_e('After view', 'medical-before-after-gallery'); ?>" aria-label="<?php esc_attr_e('After view', 'medical-before-after-gallery'); ?>">
-                        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"></rect><rect x="8" y="9" width="8" height="8"></rect><circle cx="12" cy="13" r="2"></circle></svg>
+                        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"></rect><rect x="8" y="9" width="8" height="8"></rect><circle cx="12" cy="13" r="2"></circle></svg><span class="medbeafgallery-control-label" aria-hidden="true"><?php esc_html_e('After', 'medical-before-after-gallery'); ?></span>
                     </button>
                 </div>
 
@@ -174,7 +226,7 @@ function medbeafgallery_shortcode($atts) {
 
             <div class="medbeafgallery-modal-body">
                 <div class="medbeafgallery-comparison-container">
-                    <!-- Image Pairs Navigation -->
+                    <?php /* Image Pairs Navigation */ ?>
                     <div class="medbeafgallery-image-pairs-nav" role="group" aria-label="<?php esc_attr_e('Image pairs', 'medical-before-after-gallery'); ?>">
                         <button type="button" class="medbeafgallery-pair-nav medbeafgallery-pair-prev" title="<?php esc_attr_e('Previous image pair', 'medical-before-after-gallery'); ?>" aria-label="<?php esc_attr_e('Previous image pair', 'medical-before-after-gallery'); ?>">
                             <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -182,7 +234,7 @@ function medbeafgallery_shortcode($atts) {
                             </svg>
                         </button>
                         <div class="medbeafgallery-pair-indicators">
-                            <!-- Will be populated dynamically -->
+                            <?php /* Will be populated dynamically */ ?>
                         </div>
                         <button type="button" class="medbeafgallery-pair-nav medbeafgallery-pair-next" title="<?php esc_attr_e('Next image pair', 'medical-before-after-gallery'); ?>" aria-label="<?php esc_attr_e('Next image pair', 'medical-before-after-gallery'); ?>">
                             <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -191,21 +243,21 @@ function medbeafgallery_shortcode($atts) {
                         </button>
                     </div>
 
-                    <!-- Image Sets Container -->
+                    <?php /* Image Sets Container */ ?>
                     <div class="medbeafgallery-image-sets-container">
                         <div class="medbeafgallery-before-after-wrapper active" data-pair-id="1">
-                            <!-- Content populated dynamically by showImagePair using Cocoen slider -->
+                            <?php /* Content populated dynamically by showImagePair using Cocoen slider */ ?>
                         </div>
                     </div>
 
-                    <!-- Image View Labels -->
+                    <?php /* Image View Labels */ ?>
                     <div class="medbeafgallery-labels">
                         <div class="medbeafgallery-before-label">Before</div>
                         <div class="medbeafgallery-after-label">After</div>
                     </div>
                 </div>
 
-                <!-- Case Details Panel (Pro feature — hidden unless Pro add-on is active) -->
+                <?php /* Case Details Panel (Pro feature — hidden unless Pro add-on is active) */ ?>
                 <?php if ( apply_filters( 'medbeafgallery_show_details_panel', false ) ) : ?>
                 <div class="medbeafgallery-case-details">
                     <div class="medbeafgallery-case-tabs" role="tablist" aria-label="<?php esc_attr_e('Case information', 'medical-before-after-gallery'); ?>">
@@ -262,10 +314,13 @@ function medbeafgallery_shortcode($atts) {
                         </div>
                     </div>
                 </div>
+                <?php else : ?>
+                <?php /* Doctor who treated the case (filled by gallery.js; Pro shows it in its details panel instead) */ ?>
+                <div class="medbeafgallery-doctor-strip" id="medbeafgallery-doctor-strip" hidden></div>
                 <?php endif; ?>
             </div>
 
-            <!-- Modal Navigation -->
+            <?php /* Modal Navigation */ ?>
             <div class="medbeafgallery-modal-nav">
                 <div class="medbeafgallery-modal-nav-container">
                     <?php /* The bar makes case navigation distinguishable from the image-pair
@@ -306,15 +361,42 @@ function medbeafgallery_shortcode($atts) {
 add_shortcode('medbeafgallery', 'medbeafgallery_shortcode');
 
 /**
+ * Remember the attributes of the gallery shortcode that is rendering.
+ *
+ * @param array $atts Normalised shortcode attributes.
+ */
+function medbeafgallery_set_current_shortcode_atts($atts) {
+    $GLOBALS['medbeafgallery_current_shortcode_atts'] = is_array($atts) ? $atts : array();
+}
+
+/**
+ * The attributes of the gallery shortcode on this page, after defaults.
+ *
+ * Add-ons call this from the medbeafgallery_before_gallery_main action (or later)
+ * to honour per-gallery attributes such as show_filters. Empty before any
+ * gallery has rendered.
+ *
+ * @return array
+ */
+function medbeafgallery_get_current_shortcode_atts() {
+    return isset($GLOBALS['medbeafgallery_current_shortcode_atts']) && is_array($GLOBALS['medbeafgallery_current_shortcode_atts'])
+        ? $GLOBALS['medbeafgallery_current_shortcode_atts']
+        : array();
+}
+
+/**
  * Render the category carousel
  */
-function medbeafgallery_render_category_carousel($display_mode = 'grid') {
+function medbeafgallery_render_category_carousel($display_mode = 'grid', $default_category = null) {
     // Use the existing function from utilities.php to get categories
     $categories = medbeafgallery_get_categories_with_images();
 
-    // Get default category from config or use 'all' as default
-    $gallery_config = get_option('medbeafgallery_settings', array());
-    $default_category = isset($gallery_config['default_category']) ? $gallery_config['default_category'] : 'all';
+    // The tile to highlight: the shortcode's default_category when given (so it
+    // matches the category gallery.js starts on), else the saved setting, else 'all'.
+    if ($default_category === null || $default_category === '') {
+        $gallery_config = get_option('medbeafgallery_settings', array());
+        $default_category = isset($gallery_config['default_category']) ? $gallery_config['default_category'] : 'all';
+    }
 
     // Filter for PARENT categories only
     $processed_categories = array();
@@ -346,16 +428,73 @@ function medbeafgallery_render_category_carousel($display_mode = 'grid') {
         }
     }
 
-    $carousel_class = 'medbeafgallery-category-carousel';
-    if ($display_mode === 'carousel') {
-        $carousel_class .= ' medbeafgallery-carousel-mode';
-    } else {
-        $carousel_class .= ' medbeafgallery-grid-mode';
+    $display_mode = sanitize_key((string) $display_mode);
+    if ($display_mode === '') {
+        $display_mode = 'grid';
     }
+
+    /**
+     * Filters the categories shown in the category bar (top-level only, "All" first).
+     * Each item: term_id, name, slug, count, image_url; an optional 'meta' string
+     * is printed under the name.
+     *
+     * @param array  $processed_categories Items.
+     * @param string $display_mode         Category bar style.
+     */
+    $filtered = apply_filters('medbeafgallery_category_nav_items', $processed_categories, $display_mode);
+    if (is_array($filtered)) {
+        $processed_categories = $filtered;
+    }
+
+    // Each style is built on one of four structures. A style an add-on registers
+    // picks the structure it restyles (Pro: tabs on the carousel, photo pills on
+    // the buttons); unknown styles fall back to the carousel, the long-standing look.
+    $structures = array('carousel' => 'carousel', 'grid' => 'grid', 'buttons' => 'buttons', 'dropdown' => 'dropdown');
+    $structure  = isset($structures[$display_mode])
+        ? $structures[$display_mode]
+        : sanitize_key((string) apply_filters('medbeafgallery_category_nav_structure', 'carousel', $display_mode));
+    if (!isset($structures[$structure])) {
+        $structure = 'carousel';
+    }
+
+    $classes = array(
+        'medbeafgallery-category-carousel',
+        'medbeafgallery-' . $structure . '-mode',
+        'medbeafgallery-cat-mode-' . $display_mode,
+    );
+    /**
+     * Filters the category bar's classes.
+     *
+     * @param string[] $classes      Classes.
+     * @param string   $display_mode Category bar style.
+     */
+    $classes = apply_filters('medbeafgallery_category_nav_classes', $classes, $display_mode);
+    $carousel_class = implode(' ', array_map('sanitize_html_class', array_filter((array) $classes)));
+
+    // One drop-down per page id-wise; a second gallery on the page gets its own.
+    static $select_index = 0;
+    $select_id = 'medbeafgallery-category-select' . ($select_index++ ? '-' . $select_index : '');
 
     ob_start();
     ?>
     <div class="<?php echo esc_attr($carousel_class); ?>" data-display-mode="<?php echo esc_attr($display_mode); ?>">
+        <?php if ($structure === 'dropdown' && !empty($processed_categories)) : ?>
+            <div class="medbeafgallery-category-select-wrap">
+                <label class="medbeafgallery-category-select-label" for="<?php echo esc_attr($select_id); ?>"><?php esc_html_e('Browse by category', 'medical-before-after-gallery'); ?></label>
+                <span class="medbeafgallery-category-select-shell">
+                    <select class="medbeafgallery-category-select" id="<?php echo esc_attr($select_id); ?>">
+                        <?php foreach ($processed_categories as $category) :
+                            $option_active = ($category['slug'] === $default_category) ||
+                                ($default_category === 'ba_category_all' && $category['slug'] === 'all') ||
+                                ($default_category === 'all' && $category['slug'] === 'ba_category_all');
+                            ?>
+                            <option value="<?php echo esc_attr($category['slug']); ?>"<?php echo $option_active ? ' selected="selected"' : ''; ?>><?php echo esc_html($category['slug'] === 'all' ? __('All categories', 'medical-before-after-gallery') : $category['name']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <svg class="medbeafgallery-category-select-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </span>
+            </div>
+        <?php endif; ?>
         <div class="medbeafgallery-nav-buttons">
             <button type="button" class="medbeafgallery-nav-btn medbeafgallery-prev-btn" aria-label="<?php esc_attr_e('Scroll categories left', 'medical-before-after-gallery'); ?>">
                 <span class="medbeafgallery-arrow-left" aria-hidden="true">&#8592;</span>
@@ -392,7 +531,6 @@ function medbeafgallery_render_category_carousel($display_mode = 'grid') {
                                     <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 600 600" class="medbeafgallery-category-svg-placeholder medbeafgallery-all-category-icon">
                                         <rect width="600" height="600" fill="#1E88E5" />
                                         <g transform="translate(150, 150)">
-                                            <!-- Grid Pattern -->
                                             <rect x="0" y="0" width="90" height="90" rx="8" fill="white" opacity="0.9" />
                                             <rect x="110" y="0" width="90" height="90" rx="8" fill="white" opacity="0.6" />
                                             <rect x="220" y="0" width="90" height="90" rx="8" fill="white" opacity="0.9" />
@@ -403,7 +541,6 @@ function medbeafgallery_render_category_carousel($display_mode = 'grid') {
                                             <rect x="110" y="220" width="90" height="90" rx="8" fill="white" opacity="0.6" />
                                             <rect x="220" y="220" width="90" height="90" rx="8" fill="white" opacity="0.9" />
 
-                                            <!-- "All" Text Overlay -->
                                             <text x="150" y="150" font-family="Arial, sans-serif" font-size="80"
                                                   font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">ALL</text>
                                         </g>
@@ -465,6 +602,9 @@ function medbeafgallery_render_category_carousel($display_mode = 'grid') {
                                 <?php echo wp_kses($image_html, medbeafgallery_allowed_svg_html()); ?>
                             </div>
                             <span class="medbeafgallery-category-name"><?php echo esc_html($category['name']); ?></span>
+                            <?php if (!empty($category['meta'])) : ?>
+                                <span class="medbeafgallery-category-meta"><?php echo esc_html($category['meta']); ?></span>
+                            <?php endif; ?>
                         </div>
                         <?php
                     }

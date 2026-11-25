@@ -1,0 +1,1186 @@
+/**
+ * Categories manager (admin/categories-manager.php).
+ * Plain WordPress admin look; accent follows the admin colour scheme.
+ */
+
+.medbeafgallery-cm {
+    --medbeafgallery-cm-accent: var(--wp-admin-theme-color, #2271b1);
+    --medbeafgallery-cm-accent-dark: var(--wp-admin-theme-color-darker-10, #135e96);
+    --medbeafgallery-cm-text: #1d2327;
+    --medbeafgallery-cm-muted: #50575e;
+    --medbeafgallery-cm-line: #dcdcde;
+    --medbeafgallery-cm-soft: #f6f7f7;
+    --medbeafgallery-cm-danger: #b32d2e;
+    max-width: 980px;
+}
+
+.medbeafgallery-cm .medbeafgallery-cm-title {
+    margin-bottom: 4px;
+}
+
+/* Intro ---------------------------------------------------------------- */
+
+.medbeafgallery-cm-intro {
+    margin: 8px 0 20px;
+}
+
+.medbeafgallery-cm-lead {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--medbeafgallery-cm-text);
+    margin: 0 0 6px;
+    max-width: 720px;
+}
+
+.medbeafgallery-cm-hint {
+    color: var(--medbeafgallery-cm-muted);
+    margin: 0 0 10px;
+    max-width: 720px;
+}
+
+.medbeafgallery-cm-usage {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    margin: 12px 0 0;
+    color: var(--medbeafgallery-cm-text);
+}
+
+.medbeafgallery-cm-usage[hidden] {
+    display: none;
+}
+
+.medbeafgallery-cm-usage-text {
+    font-weight: 600;
+}
+
+.medbeafgallery-cm-usage-meter {
+    display: inline-block;
+    width: 120px;
+    height: 6px;
+    border-radius: 3px;
+    background: #e0e0e3;
+    overflow: hidden;
+}
+
+.medbeafgallery-cm-usage-meter > span {
+    display: block;
+    height: 100%;
+    background: var(--medbeafgallery-cm-accent);
+    border-radius: 3px;
+}
+
+.medbeafgallery-cm-usage.is-full .medbeafgallery-cm-usage-meter > span {
+    background: #996800;
+}
+
+/* Cards ---------------------------------------------------------------- */
+
+.medbeafgallery-cm-card {
+    background: #fff;
+    border: 1px solid var(--medbeafgallery-cm-line);
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    padding: 18px 22px;
+    margin: 0 0 18px;
+}
+
+.medbeafgallery-cm-card[hidden] {
+    display: none;
+}
+
+.medbeafgallery-cm-card-title {
+    font-size: 15px;
+    margin: 0 0 12px;
+    padding: 0;
+}
+
+/* Messages ------------------------------------------------------------- */
+
+/* Stays in view below the admin bar: the button that caused a message (an Edit
+   panel's Save) is usually far down the list. */
+.medbeafgallery-cm-notice {
+    position: sticky;
+    top: 40px;
+    z-index: 20;
+    background: #fff;
+    border: 1px solid var(--medbeafgallery-cm-line);
+    border-left: 4px solid #d63638;
+    border-radius: 6px;
+    padding: 2px 14px;
+    margin: 0 0 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* A name field that gets focus again is not scrolled under the message. */
+.medbeafgallery-cm-edit-form input[type="text"] {
+    scroll-margin-top: 110px;
+}
+
+.medbeafgallery-cm-notice[hidden] {
+    display: none;
+}
+
+.medbeafgallery-cm-notice p {
+    margin: 10px 0;
+}
+
+.medbeafgallery-cm-limit {
+    margin: 12px 0 0;
+    padding: 10px 14px;
+    background: #fcf9e8;
+    border-left: 4px solid #dba617;
+    border-radius: 4px;
+    color: var(--medbeafgallery-cm-text);
+}
+
+.medbeafgallery-cm-limit[hidden] {
+    display: none;
+}
+
+/* Add form ------------------------------------------------------------- */
+
+.medbeafgallery-cm-add-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 14px;
+}
+
+.medbeafgallery-cm-field label {
+    display: block;
+    font-weight: 600;
+    margin: 0 0 5px;
+}
+
+.medbeafgallery-cm-field-name {
+    flex: 1 1 260px;
+}
+
+.medbeafgallery-cm-field-name input {
+    width: 100%;
+    max-width: none;
+}
+
+.medbeafgallery-cm-field-parent {
+    flex: 0 1 220px;
+}
+
+.medbeafgallery-cm-field-parent select {
+    width: 100%;
+    max-width: none;
+}
+
+.medbeafgallery-cm-add input,
+.medbeafgallery-cm-add select,
+.medbeafgallery-cm-add .button {
+    min-height: 36px;
+}
+
+/* "All cases" ---------------------------------------------------------- */
+
+.medbeafgallery-cm-all {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    margin: 0 0 6px;
+    background: var(--medbeafgallery-cm-soft);
+    border-radius: 8px;
+}
+
+.medbeafgallery-cm-all[hidden] {
+    display: none;
+}
+
+.medbeafgallery-cm-badge {
+    color: var(--medbeafgallery-cm-muted);
+    font-size: 13px;
+}
+
+.medbeafgallery-cm-note {
+    margin: 2px 0 0;
+    color: var(--medbeafgallery-cm-muted);
+}
+
+.medbeafgallery-cm.has-js .medbeafgallery-cm-all .medbeafgallery-cm-note {
+    display: none;
+}
+
+/* List ----------------------------------------------------------------- */
+
+.medbeafgallery-cm-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.medbeafgallery-cm-list[hidden] {
+    display: none;
+}
+
+.medbeafgallery-cm-item {
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid #f0f0f1;
+}
+
+.medbeafgallery-cm-list-card > .medbeafgallery-cm-list > .medbeafgallery-cm-item:first-child {
+    border-top: 0;
+}
+
+/* No-JS list: nesting shown with the depth variable. */
+.medbeafgallery-cm-row-static {
+    padding-left: calc(var(--medbeafgallery-cm-depth, 0) * 40px);
+}
+
+.medbeafgallery-cm-children {
+    margin-left: 34px;
+    padding-left: 14px;
+    border-left: 2px solid #f0f0f1;
+}
+
+.medbeafgallery-cm-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 6px;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.medbeafgallery-cm-row.is-flash {
+    animation: medbeafgallery-cm-flash 1.6s ease-out;
+}
+
+@keyframes medbeafgallery-cm-flash {
+    from { background: #f0f6fc; }
+    to { background: #fff; }
+}
+
+.medbeafgallery-cm-main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.medbeafgallery-cm-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 12px;
+    min-height: 26px;
+}
+
+.medbeafgallery-cm-line[hidden] {
+    display: none;
+}
+
+/* Handle */
+.medbeafgallery-cm-handle,
+.medbeafgallery-cm-handle-spacer {
+    flex: 0 0 24px;
+    width: 24px;
+    height: 48px;
+}
+
+.medbeafgallery-cm-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #787c82;
+    cursor: grab;
+    touch-action: none;
+}
+
+.medbeafgallery-cm-handle:hover {
+    background: #f0f0f1;
+    color: var(--medbeafgallery-cm-text);
+}
+
+.medbeafgallery-cm.is-sorting,
+.medbeafgallery-cm.is-sorting * {
+    cursor: grabbing !important;
+    user-select: none;
+}
+
+.medbeafgallery-cm-grip {
+    display: block;
+    width: 10px;
+    height: 16px;
+    background-image: radial-gradient(circle, currentColor 1.5px, transparent 1.7px);
+    background-size: 5px 5.33px;
+    background-position: 0 0;
+}
+
+.medbeafgallery-cm-item.is-dragging > .medbeafgallery-cm-row {
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.14);
+    position: relative;
+    z-index: 2;
+    background: #fff;
+}
+
+.medbeafgallery-cm-item.is-dragging {
+    border-top-color: transparent;
+}
+
+/* Thumbnail */
+.medbeafgallery-cm-thumb {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--medbeafgallery-cm-line);
+    border-radius: 8px;
+    background: var(--medbeafgallery-cm-soft);
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #787c82;
+    position: relative;
+}
+
+button.medbeafgallery-cm-thumb {
+    cursor: pointer;
+}
+
+.medbeafgallery-cm-thumb.is-empty {
+    border-style: dashed;
+    border-color: #a7aaad;
+}
+
+.medbeafgallery-cm-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.medbeafgallery-cm-thumb .dashicons {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+}
+
+button.medbeafgallery-cm-thumb:hover {
+    border-color: var(--medbeafgallery-cm-accent);
+    color: var(--medbeafgallery-cm-accent);
+}
+
+button.medbeafgallery-cm-thumb:hover img {
+    opacity: 0.85;
+}
+
+/* Name */
+.medbeafgallery-cm-name,
+.medbeafgallery-cm-name-static {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--medbeafgallery-cm-text);
+    line-height: 1.5;
+}
+
+.medbeafgallery-cm-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 0 0 -6px;
+    padding: 1px 6px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    cursor: text;
+    text-align: left;
+    max-width: 100%;
+}
+
+.medbeafgallery-cm-name-text {
+    overflow-wrap: anywhere;
+}
+
+.medbeafgallery-cm-name .dashicons {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+    color: #787c82;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.medbeafgallery-cm-name:hover {
+    background: #f0f6fc;
+}
+
+.medbeafgallery-cm-name:hover .dashicons,
+.medbeafgallery-cm-name:focus .dashicons {
+    opacity: 1;
+}
+
+/* Counts */
+.medbeafgallery-cm-count {
+    color: var(--medbeafgallery-cm-muted);
+    font-size: 13px;
+}
+
+a.medbeafgallery-cm-count {
+    color: var(--medbeafgallery-cm-accent);
+}
+
+.medbeafgallery-cm-count-tree {
+    color: var(--medbeafgallery-cm-muted);
+    font-size: 13px;
+}
+
+/* Row actions */
+.medbeafgallery-cm-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 4px;
+    margin: 2px 0 0 -6px;
+}
+
+.medbeafgallery-cm-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    margin: 0;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--medbeafgallery-cm-muted);
+    font-size: 13px;
+    line-height: 1.4;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.medbeafgallery-cm-link:hover,
+.medbeafgallery-cm-link:focus-visible {
+    color: var(--medbeafgallery-cm-accent);
+    text-decoration: underline;
+}
+
+.medbeafgallery-cm-all .medbeafgallery-cm-link,
+.medbeafgallery-cm-empty .medbeafgallery-cm-link {
+    color: var(--medbeafgallery-cm-accent);
+}
+
+.medbeafgallery-cm-link.is-danger {
+    color: var(--medbeafgallery-cm-danger);
+}
+
+.medbeafgallery-cm-link.is-danger:hover {
+    color: #8a2424;
+}
+
+.medbeafgallery-cm-link:disabled {
+    color: #8c8f94;
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
+/* Up / down */
+.medbeafgallery-cm-order {
+    display: flex;
+    gap: 2px;
+    flex: 0 0 auto;
+    margin-top: 8px;
+}
+
+.medbeafgallery-cm-icon-button {
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--medbeafgallery-cm-muted);
+    cursor: pointer;
+}
+
+.medbeafgallery-cm-icon-button:hover {
+    background: #f0f0f1;
+    color: var(--medbeafgallery-cm-text);
+}
+
+.medbeafgallery-cm-icon-button:disabled {
+    opacity: 0.3;
+    cursor: default;
+    background: transparent;
+}
+
+/* Inline panels */
+.medbeafgallery-cm-panel {
+    margin: 6px 0 2px;
+}
+
+.medbeafgallery-cm-panel[hidden] {
+    display: none;
+}
+
+.medbeafgallery-cm-row.is-editing .medbeafgallery-cm-panel {
+    margin-top: 0;
+}
+
+.medbeafgallery-cm-row.is-editing .medbeafgallery-cm-actions {
+    display: none;
+}
+
+.medbeafgallery-cm-inline-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--medbeafgallery-cm-soft);
+    border-radius: 8px;
+}
+
+.medbeafgallery-cm-row.is-editing .medbeafgallery-cm-inline-form {
+    padding: 0;
+    background: transparent;
+}
+
+.medbeafgallery-cm-inline-form label {
+    flex: 1 0 100%;
+    font-weight: 600;
+}
+
+.medbeafgallery-cm-inline-form input[type="text"] {
+    flex: 1 1 220px;
+    max-width: 360px;
+    min-height: 34px;
+}
+
+.medbeafgallery-cm-inline-form select {
+    flex: 0 1 260px;
+    min-height: 34px;
+}
+
+.medbeafgallery-cm-panel-note {
+    flex: 1 0 100%;
+    margin: 0;
+    color: var(--medbeafgallery-cm-muted);
+}
+
+.medbeafgallery-cm-confirm {
+    padding: 10px 14px 12px;
+    background: #fcf0f1;
+    border-left: 4px solid #d63638;
+    border-radius: 6px;
+}
+
+.medbeafgallery-cm-confirm-title {
+    font-weight: 600;
+    margin: 0 0 4px;
+    color: var(--medbeafgallery-cm-text);
+}
+
+.medbeafgallery-cm-confirm-text {
+    margin: 0 0 10px;
+    color: var(--medbeafgallery-cm-text);
+}
+
+.medbeafgallery-cm-confirm-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.medbeafgallery-cm .button.medbeafgallery-cm-delete-button {
+    background: #d63638;
+    border-color: #d63638;
+    color: #fff;
+}
+
+.medbeafgallery-cm .button.medbeafgallery-cm-delete-button:hover {
+    background: #b32d2e;
+    border-color: #b32d2e;
+    color: #fff;
+}
+
+/* Empty state and suggestions ------------------------------------------- */
+
+.medbeafgallery-cm-empty {
+    margin: 10px 0 2px;
+    padding: 16px 18px;
+    border: 1px dashed #c3c4c7;
+    border-radius: 10px;
+    background: #fcfcfc;
+}
+
+.medbeafgallery-cm-empty[hidden] {
+    display: none;
+}
+
+.medbeafgallery-cm-empty.is-empty-list {
+    margin-top: 6px;
+    padding: 28px 22px;
+    text-align: center;
+}
+
+.medbeafgallery-cm-empty > .dashicons {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: #8c8f94;
+}
+
+.medbeafgallery-cm-empty-title {
+    font-size: 15px;
+    margin: 6px 0 4px;
+}
+
+.medbeafgallery-cm-empty p {
+    margin: 0 0 12px;
+    color: var(--medbeafgallery-cm-muted);
+}
+
+.medbeafgallery-cm-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.medbeafgallery-cm-empty.is-empty-list .medbeafgallery-cm-chips {
+    justify-content: center;
+}
+
+.medbeafgallery-cm .button.medbeafgallery-cm-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 999px;
+    padding: 0 14px 0 10px;
+    min-height: 34px;
+}
+
+.medbeafgallery-cm-chip .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.medbeafgallery-cm-dismiss {
+    margin-top: 10px;
+    padding-left: 0;
+}
+
+/* Footer --------------------------------------------------------------- */
+
+.medbeafgallery-cm-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--medbeafgallery-cm-muted);
+    margin: 4px 0 24px;
+}
+
+.medbeafgallery-cm-footer .dashicons {
+    color: #8c8f94;
+}
+
+/* Focus ---------------------------------------------------------------- */
+
+.medbeafgallery-cm-handle:focus,
+.medbeafgallery-cm-thumb:focus,
+.medbeafgallery-cm-name:focus,
+.medbeafgallery-cm-link:focus,
+.medbeafgallery-cm-icon-button:focus,
+.medbeafgallery-cm-count:focus {
+    outline: none;
+}
+
+.medbeafgallery-cm-handle:focus-visible,
+.medbeafgallery-cm-thumb:focus-visible,
+.medbeafgallery-cm-name:focus-visible,
+.medbeafgallery-cm-link:focus-visible,
+.medbeafgallery-cm-icon-button:focus-visible,
+.medbeafgallery-cm-count:focus-visible,
+.medbeafgallery-cm-footer a:focus-visible,
+.medbeafgallery-cm-usage a:focus-visible {
+    outline: 2px solid var(--medbeafgallery-cm-accent);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+[aria-busy="true"].medbeafgallery-cm .medbeafgallery-cm-list-card {
+    cursor: progress;
+}
+
+/* Phones and small tablets (WordPress's admin breakpoint) --------------- */
+
+@media screen and (max-width: 782px) {
+    .medbeafgallery-cm-notice {
+        top: 54px;
+    }
+
+    .medbeafgallery-cm-card {
+        padding: 14px 14px;
+    }
+
+    .medbeafgallery-cm-row {
+        gap: 8px;
+        padding: 10px 0;
+        flex-wrap: wrap;
+    }
+
+    .medbeafgallery-cm-handle,
+    .medbeafgallery-cm-handle-spacer {
+        flex-basis: 44px;
+        width: 44px;
+        height: 48px;
+    }
+
+    .medbeafgallery-cm-handle-spacer {
+        flex-basis: 0;
+        width: 0;
+    }
+
+    .medbeafgallery-cm-thumb {
+        flex-basis: 48px;
+    }
+
+    .medbeafgallery-cm-main {
+        flex: 1 1 calc(100% - 120px);
+    }
+
+    .medbeafgallery-cm-name {
+        min-height: 44px;
+    }
+
+    .medbeafgallery-cm-link {
+        min-height: 44px;
+        padding: 0 10px;
+        font-size: 14px;
+    }
+
+    .medbeafgallery-cm-actions {
+        gap: 0 2px;
+    }
+
+    .medbeafgallery-cm-order {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 0;
+        gap: 6px;
+    }
+
+    .medbeafgallery-cm-icon-button {
+        width: 44px;
+        height: 44px;
+        border-color: var(--medbeafgallery-cm-line);
+    }
+
+    .medbeafgallery-cm-children {
+        margin-left: 10px;
+        padding-left: 8px;
+    }
+
+    .medbeafgallery-cm-field-parent,
+    .medbeafgallery-cm-field-submit {
+        flex: 1 1 100%;
+    }
+
+    .medbeafgallery-cm-field-submit .button {
+        width: 100%;
+    }
+
+    .medbeafgallery-cm-inline-form input[type="text"],
+    .medbeafgallery-cm-inline-form select {
+        flex: 1 1 100%;
+        max-width: none;
+        min-height: 44px;
+    }
+
+    .medbeafgallery-cm-inline-form .button,
+    .medbeafgallery-cm-confirm-buttons .button,
+    .medbeafgallery-cm .button.medbeafgallery-cm-chip {
+        min-height: 44px;
+    }
+
+    .medbeafgallery-cm-name .dashicons {
+        opacity: 1;
+    }
+}
+
+/* Here the admin bar scrolls away with the page. */
+@media screen and (max-width: 600px) {
+    .medbeafgallery-cm-notice {
+        top: 8px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .medbeafgallery-cm-row.is-flash {
+        animation: none;
+    }
+
+    .medbeafgallery-cm-name .dashicons {
+        transition: none;
+    }
+}
+
+/* Edit panel: name, description and add-on fields (Pro: icon). */
+.medbeafgallery-cm-edit-form {
+    display: grid;
+    gap: 14px;
+    max-width: 640px;
+    margin: 4px 0 6px;
+}
+
+.medbeafgallery-cm-edit-field {
+    display: grid;
+    gap: 4px;
+}
+
+.medbeafgallery-cm-edit-field label,
+.medbeafgallery-cm-choice-field legend {
+    font-weight: 600;
+    color: var(--medbeafgallery-cm-text);
+}
+
+.medbeafgallery-cm-edit-field input[type="text"],
+.medbeafgallery-cm-edit-field textarea {
+    width: 100%;
+    max-width: 100%;
+}
+
+.medbeafgallery-cm-edit-form .description {
+    margin: 2px 0 0;
+    color: var(--medbeafgallery-cm-muted);
+}
+
+.medbeafgallery-cm-choice-field {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+}
+
+.medbeafgallery-cm-choice-field legend {
+    padding: 0;
+    margin-bottom: 6px;
+}
+
+.medbeafgallery-cm-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.medbeafgallery-cm-choice {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 3px 12px 3px 8px;
+    border: 1px solid var(--medbeafgallery-cm-line);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--medbeafgallery-cm-text);
+    cursor: pointer;
+}
+
+.medbeafgallery-cm-choice input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+}
+
+.medbeafgallery-cm-choice:has(input:checked) {
+    border-color: var(--medbeafgallery-cm-accent);
+    box-shadow: 0 0 0 1px var(--medbeafgallery-cm-accent);
+    background: color-mix(in srgb, var(--medbeafgallery-cm-accent) 7%, #fff);
+}
+
+.medbeafgallery-cm-choice:has(input:focus-visible) {
+    outline: 2px solid var(--medbeafgallery-cm-accent);
+    outline-offset: 2px;
+}
+
+.medbeafgallery-cm-choice-icon {
+    display: inline-flex;
+    line-height: 0;
+}
+
+.medbeafgallery-cm-choice-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.medbeafgallery-cm-edit-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+/* "All cases" Edit panel (add-on fields only). */
+.medbeafgallery-cm-all.is-editing {
+    align-items: flex-start;
+}
+
+.medbeafgallery-cm-all.is-editing .medbeafgallery-cm-actions {
+    display: none;
+}
+
+.medbeafgallery-cm-all .medbeafgallery-cm-panel .medbeafgallery-cm-panel-note {
+    margin: 2px 0 0;
+}
+
+/* Add-on fields: grid choice (e.g. Pro's icons), image and toggle. */
+.medbeafgallery-cm-choice-field legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+}
+
+.medbeafgallery-cm-chosen {
+    font-weight: 400;
+    color: var(--medbeafgallery-cm-muted);
+}
+
+.medbeafgallery-cm-grid-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    margin: 0 0 8px;
+}
+
+.medbeafgallery-cm-grid-search {
+    flex: 0 1 260px;
+    min-height: 34px;
+}
+
+.medbeafgallery-cm-grid-status {
+    color: var(--medbeafgallery-cm-muted);
+}
+
+.medbeafgallery-cm-grid-pinned {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 8px;
+}
+
+.medbeafgallery-cm-grid-scroll {
+    max-height: 292px;
+    overflow-y: auto;
+    padding: 2px 4px 4px 2px;
+    border: 1px solid var(--medbeafgallery-cm-line);
+    border-radius: 8px;
+    background: var(--medbeafgallery-cm-soft);
+}
+
+.medbeafgallery-cm-grid-group {
+    padding: 6px 6px 4px;
+}
+
+.medbeafgallery-cm-grid-title {
+    margin: 0 0 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--medbeafgallery-cm-muted);
+}
+
+.medbeafgallery-cm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 40px);
+    gap: 4px;
+}
+
+.medbeafgallery-cm-tile {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 40px;
+    height: 40px;
+    box-sizing: border-box;
+    border: 1px solid var(--medbeafgallery-cm-line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--medbeafgallery-cm-text);
+    cursor: pointer;
+}
+
+.medbeafgallery-cm-tile[hidden],
+.medbeafgallery-cm-grid-group[hidden],
+.medbeafgallery-cm-image-field[hidden],
+.medbeafgallery-cm-toggle-field[hidden],
+.medbeafgallery-cm-choice-field[hidden],
+.medbeafgallery-cm-image-preview[hidden],
+.medbeafgallery-cm-image-none[hidden] {
+    display: none;
+}
+
+.medbeafgallery-cm-tile.is-named {
+    width: auto;
+    padding: 0 14px 0 9px;
+    border-radius: 999px;
+}
+
+.medbeafgallery-cm-tile input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+}
+
+.medbeafgallery-cm-tile:hover {
+    border-color: var(--medbeafgallery-cm-accent);
+}
+
+/* The current choice: filled with the accent colour. */
+.medbeafgallery-cm-tile:has(input:checked) {
+    border-color: var(--medbeafgallery-cm-accent);
+    background: var(--medbeafgallery-cm-accent);
+    color: #fff;
+    box-shadow: 0 0 0 1px var(--medbeafgallery-cm-accent);
+}
+
+.medbeafgallery-cm-tile:has(input:focus-visible) {
+    outline: 2px solid var(--medbeafgallery-cm-accent);
+    outline-offset: 2px;
+}
+
+.medbeafgallery-cm-tile-art {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    line-height: 0;
+}
+
+.medbeafgallery-cm-tile-art svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Image previews: tinted ones are a mask in the text colour. */
+.medbeafgallery-cm-img {
+    display: block;
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.medbeafgallery-cm-img.is-tint {
+    background: currentColor;
+    -webkit-mask: var(--medbeafgallery-cm-img) center / contain no-repeat;
+    mask: var(--medbeafgallery-cm-img) center / contain no-repeat;
+}
+
+.medbeafgallery-cm-image-field,
+.medbeafgallery-cm-toggle-field {
+    display: grid;
+    gap: 6px;
+}
+
+.medbeafgallery-cm-field-label {
+    font-weight: 600;
+    color: var(--medbeafgallery-cm-text);
+}
+
+.medbeafgallery-cm-image-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.medbeafgallery-cm-image-preview {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--medbeafgallery-cm-line);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--medbeafgallery-cm-accent) 10%, #fff);
+    color: var(--medbeafgallery-cm-accent-dark);
+}
+
+.medbeafgallery-cm-image-preview .medbeafgallery-cm-img {
+    width: 24px;
+    height: 24px;
+}
+
+.medbeafgallery-cm-image-none {
+    color: var(--medbeafgallery-cm-muted);
+}
+
+.medbeafgallery-cm-toggle-field label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--medbeafgallery-cm-text);
+}
+
+.medbeafgallery-cm-toggle-field input[type="checkbox"] {
+    margin: 0;
+}
+
+@media screen and (max-width: 782px) {
+    .medbeafgallery-cm-grid {
+        grid-template-columns: repeat(auto-fill, 44px);
+    }
+
+    .medbeafgallery-cm-tile {
+        width: 44px;
+        height: 44px;
+    }
+
+    .medbeafgallery-cm-tile.is-named {
+        width: auto;
+    }
+
+    .medbeafgallery-cm-grid-search {
+        flex: 1 1 100%;
+        min-height: 44px;
+    }
+
+    .medbeafgallery-cm-grid-scroll {
+        max-height: 52vh;
+    }
+
+    /* The "All cases" panel gets the full width under its thumbnail. */
+    .medbeafgallery-cm-all.is-editing {
+        flex-wrap: wrap;
+    }
+
+    .medbeafgallery-cm-all.is-editing .medbeafgallery-cm-main {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    /* So does a category being edited: about seven icon tiles a row, not four. */
+    .medbeafgallery-cm-row.is-editing .medbeafgallery-cm-main {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .medbeafgallery-cm-edit-buttons .button,
+    .medbeafgallery-cm-image-row .button {
+        min-height: 44px;
+    }
+}

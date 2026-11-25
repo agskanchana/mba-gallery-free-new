@@ -607,6 +607,13 @@
   font-weight: 500;
 }
 
+/* A lone category badge sits in the info column, a flex column that would stretch
+   it across the card; several badges come wrapped in their own row. */
+.medbeafgallery-gallery-item-info > .medbeafgallery-gallery-category {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
 /* Item metadata */
 .medbeafgallery-gallery-meta {
   display: flex;
@@ -762,6 +769,10 @@
   line-height: 1.3;
   flex: 1;
   order: 3;
+  /* The close button is absolutely positioned at the right edge of the
+     header; keep a long title from running underneath it. */
+  box-sizing: border-box;
+  padding-right: 48px;
 }
 
 /* Image Controls in Header - Desktop first */
@@ -1344,11 +1355,16 @@
     justify-content: center;
   }
 
+  /* Centred full-width title with the close button pinned top-right: reserve
+     the button's width on both sides so the title clears it and stays centred. */
   .medbeafgallery-modal-header h2 {
     font-size: 1.125rem;
     width: 100%;
     order: 1;
     text-align: center;
+    box-sizing: border-box;
+    padding-left: 44px;
+    padding-right: 44px;
   }
 
   .medbeafgallery-modal-header .medbeafgallery-image-controls {
@@ -2158,7 +2174,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 9999;
+    z-index: 99999; /* see createModalPortal() in gallery.js */
     pointer-events: none;
 }
 
@@ -2200,8 +2216,11 @@
 }
 
 /* Fix horizontal scroll issues */
+/* (clip, not hidden: hidden makes the body a scroll container, and then nothing on the
+   page can be position: sticky — a theme's header included.) */
 html, body {
   overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
   width: 100%;
 }
@@ -2571,4 +2590,664 @@ html, body {
   flex-direction: column !important;
   align-items: stretch !important;
   width: 100% !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Hover-reveal cards (Design → Card Style "Hover reveal")
+   The before photo fills the card; the after photo wipes in from the left on
+   hover, keyboard focus, a press-and-hold (.is-revealed) and the one-time
+   intro wipe (.is-peeking). The wipe only clips the after photo — both photos
+   are shown unaltered.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card .medbeafgallery-preview-container {
+  display: block !important;
+  position: relative !important;
+}
+
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card .medbeafgallery-preview-before,
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card .medbeafgallery-preview-after,
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card .medbeafgallery-preview-backdrop {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  object-fit: contain !important;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Each photo is shown whole over a blurred, slightly darkened copy of itself. */
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card .medbeafgallery-preview-backdrop {
+  object-fit: cover !important;
+  filter: blur(22px) saturate(1.1) brightness(0.92);
+  transform: scale(1.25);
+  pointer-events: none;
+}
+
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card .medbeafgallery-preview-container {
+  overflow: hidden !important;
+}
+
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card :is(.medbeafgallery-preview-after, .medbeafgallery-preview-backdrop-after) {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 0.65s cubic-bezier(0.65, 0, 0.35, 1);
+  z-index: 1;
+}
+
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card:hover :is(.medbeafgallery-preview-after, .medbeafgallery-preview-backdrop-after),
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card:focus-within :is(.medbeafgallery-preview-after, .medbeafgallery-preview-backdrop-after),
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card.is-revealed :is(.medbeafgallery-preview-after, .medbeafgallery-preview-backdrop-after) {
+  clip-path: inset(0 0 0 0);
+}
+
+/* The divider rides the wipe edge while it moves, then fades. */
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card .medbeafgallery-preview-divider {
+  left: 0;
+  opacity: 0;
+  z-index: 2;
+}
+
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card:hover .medbeafgallery-preview-divider,
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card:focus-within .medbeafgallery-preview-divider,
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card.is-revealed .medbeafgallery-preview-divider {
+  animation: medbeafgallery-reveal-edge 0.65s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes medbeafgallery-reveal-edge {
+  0%   { left: 0;    opacity: 1; }
+  85%  { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+/* Before / After chip, top right. */
+.medbeafgallery-card-state {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  z-index: 3 !important;
+  display: grid !important;
+  pointer-events: none;
+}
+
+.medbeafgallery-card-state > span {
+  grid-area: 1 / 1;
+  justify-self: end;
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  background: rgba(17, 24, 39, 0.72) !important;
+  color: #fff !important;
+  font-size: 0.6875rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  line-height: 1.4 !important;
+  text-transform: uppercase !important;
+  transition: opacity 0.25s ease;
+}
+
+.medbeafgallery-card-state-after { opacity: 0; }
+
+.medbeafgallery-reveal-card:hover .medbeafgallery-card-state-before,
+.medbeafgallery-reveal-card:focus-within .medbeafgallery-card-state-before,
+.medbeafgallery-reveal-card.is-revealed .medbeafgallery-card-state-before { opacity: 0; }
+
+.medbeafgallery-reveal-card:hover .medbeafgallery-card-state-after,
+.medbeafgallery-reveal-card:focus-within .medbeafgallery-card-state-after,
+.medbeafgallery-reveal-card.is-revealed .medbeafgallery-card-state-after { opacity: 1; }
+
+/* One-time intro wipe: before → after, hold, back to before. */
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card.is-peeking :is(.medbeafgallery-preview-after, .medbeafgallery-preview-backdrop-after) {
+  animation: medbeafgallery-peek-after 2.1s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+.medbeafgallery-cards-reveal .medbeafgallery-reveal-card.is-peeking .medbeafgallery-preview-divider {
+  animation: medbeafgallery-peek-edge 2.1s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+.medbeafgallery-reveal-card.is-peeking .medbeafgallery-card-state-before {
+  animation: medbeafgallery-peek-label-before 2.1s linear both;
+}
+
+.medbeafgallery-reveal-card.is-peeking .medbeafgallery-card-state-after {
+  animation: medbeafgallery-peek-label-after 2.1s linear both;
+}
+
+@keyframes medbeafgallery-peek-after {
+  0%   { clip-path: inset(0 100% 0 0); }
+  35%  { clip-path: inset(0 0 0 0); }
+  65%  { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(0 100% 0 0); }
+}
+
+@keyframes medbeafgallery-peek-edge {
+  0%   { left: 0;    opacity: 0; }
+  4%   { opacity: 1; }
+  35%  { left: 100%; opacity: 1; }
+  38%  { left: 100%; opacity: 0; }
+  65%  { left: 100%; opacity: 0; }
+  68%  { left: 100%; opacity: 1; }
+  97%  { left: 0;    opacity: 1; }
+  100% { left: 0;    opacity: 0; }
+}
+
+@keyframes medbeafgallery-peek-label-before {
+  0%, 30%   { opacity: 1; }
+  34%, 68%  { opacity: 0; }
+  72%, 100% { opacity: 1; }
+}
+
+@keyframes medbeafgallery-peek-label-after {
+  0%, 30%   { opacity: 0; }
+  34%, 68%  { opacity: 1; }
+  72%, 100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .medbeafgallery-cards-reveal .medbeafgallery-reveal-card .medbeafgallery-preview-after,
+  .medbeafgallery-cards-reveal .medbeafgallery-reveal-card .medbeafgallery-preview-backdrop-after,
+  .medbeafgallery-card-state > span {
+    transition: none !important;
+  }
+  .medbeafgallery-cards-reveal .medbeafgallery-reveal-card .medbeafgallery-preview-divider {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Refined cards (Design → Card Style "Refined"): the hover reveal on portrait
+   photos without boxes, the title and category in quiet lines under them. Only
+   the free cards (Pro's own layouts bring their own styles).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-gallery-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)) !important;
+  gap: clamp(26px, 3vw, 40px) clamp(16px, 2vw, 26px) !important;
+}
+
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-gallery-item {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-gallery-item:hover { transform: none !important; box-shadow: none !important; }
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-gallery-image-container { aspect-ratio: 4 / 5 !important; border-radius: 18px !important; overflow: hidden !important; }
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-preview-container { height: 100% !important; }
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-reveal-card .medbeafgallery-preview-before,
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-reveal-card .medbeafgallery-preview-after { object-fit: cover !important; object-position: 50% 32% !important; }
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-reveal-card .medbeafgallery-preview-backdrop { display: none !important; }
+
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-card-state { top: 12px !important; right: auto !important; left: 12px !important; }
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-card-state > span { justify-self: start; background: rgba(255, 255, 255, 0.88) !important; color: #111827 !important; font-size: 0.75rem !important; font-weight: 600 !important; letter-spacing: normal !important; text-transform: none !important; }
+
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-gallery-item-info { flex-direction: column-reverse !important; justify-content: flex-end !important; padding: 14px 2px 0 !important; border: 0 !important; background: transparent !important; }
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-gallery-item-info h3 { margin: 0 !important; font-size: 1.03rem !important; line-height: 1.32 !important; text-align: start !important; }
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-gallery-item-info > .medbeafgallery-gallery-category { margin: 3px 0 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: none !important; color: #6b7280 !important; font-size: 0.85rem !important; font-weight: 400 !important; }
+
+/* The whole card opens the case; its button is there for the keyboard. */
+.medbeafgallery-cards-refined:not(.mba-pro-layouts) .medbeafgallery-gallery-view-btn:not(:focus-visible) { opacity: 0 !important; pointer-events: none !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Case window: blurred copy of the photo behind it instead of black bars
+   (Design → Case Window Background). gallery.js sets --medbeafgallery-backdrop
+   on each pair wrapper to the photo being shown.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.medbeafgallery-backdrop-blur .medbeafgallery-before-after-wrapper {
+  isolation: isolate;
+}
+
+.medbeafgallery-backdrop-blur .medbeafgallery-before-after-wrapper::before {
+  content: "" !important;
+  position: absolute !important;
+  top: -48px !important;
+  right: -48px !important;
+  bottom: -48px !important;
+  left: -48px !important;
+  z-index: -1 !important;
+  display: block !important;
+  background-image: var(--medbeafgallery-backdrop, none) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  filter: blur(32px) brightness(0.55) saturate(1.15);
+  transform: scale(1.08);
+  pointer-events: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Doctor card in the case window (free modal; Pro shows it in its own panel)
+   A bar under the photo on every screen size.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.medbeafgallery-doctor-strip {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 14px 18px !important;
+  margin: 0 !important;
+  background: #fff !important;
+  border-top: 1px solid #e5e7eb !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.medbeafgallery-doctor-strip[hidden] {
+  display: none !important;
+}
+
+.medbeafgallery-doctor-strip .medbeafgallery-doctor-photo {
+  width: 56px !important;
+  height: 56px !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  flex-shrink: 0 !important;
+}
+
+.medbeafgallery-doctor-strip .medbeafgallery-doctor-initials {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--medbeafgallery-primary-solid, #2563eb) !important;
+  color: #fff !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+}
+
+.medbeafgallery-doctor-text {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  line-height: 1.35 !important;
+}
+
+.medbeafgallery-doctor-label {
+  color: #6b7280 !important;
+  font-size: 0.6875rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.medbeafgallery-doctor-name {
+  color: #111827 !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}
+
+a.medbeafgallery-doctor-name:hover,
+a.medbeafgallery-doctor-name:focus-visible {
+  text-decoration: underline !important;
+}
+
+.medbeafgallery-doctor-credentials {
+  color: #374151 !important;
+  font-size: 0.875rem !important;
+}
+
+.medbeafgallery-doctor-location {
+  color: #6b7280 !important;
+  font-size: 0.8125rem !important;
+}
+
+/* Desktop: a bar under the photo, like on phones. (It used to be a 240px
+   column beside the photo, which left a tall, mostly empty panel.) The body
+   is a row on desktop for the Pro details panel; with only the doctor bar it
+   stacks instead. Browsers without :has() keep the row and the bar beside. */
+@media (min-width: 992px) {
+  .medbeafgallery-modal-body:has(> .medbeafgallery-doctor-strip:not([hidden])) {
+    flex-direction: column !important;
+  }
+
+  .medbeafgallery-modal-body:has(> .medbeafgallery-doctor-strip:not([hidden])) > .medbeafgallery-comparison-container {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+  }
+
+  .medbeafgallery-doctor-strip {
+    padding: 14px 24px !important;
+  }
+}
+
+/* ==========================================================================
+   Case window: comparison views as one labelled, segmented control.
+   Layout only (sizes, spacing); colours stay with the base rules, the
+   colour setting and the Pro add-on. The selectors out-rank Pro 1.5's
+   fixed 38px buttons so the labels fit with any Pro version.
+   ========================================================================== */
+.medbeafgallery-modal .medbeafgallery-modal-header .medbeafgallery-image-controls {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 4px !important;
+  margin: 0 !important;
+  border-radius: 12px !important;
+  background: #f1f5f9 !important;
+  box-shadow: inset 0 0 0 1px #e2e8f0 !important;
+}
+
+.medbeafgallery-modal .medbeafgallery-modal-header .medbeafgallery-image-controls .medbeafgallery-control-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  width: auto !important;
+  min-width: 44px !important;
+  height: 36px !important;
+  padding: 0 12px !important;
+  border-radius: 9px !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.medbeafgallery-modal .medbeafgallery-modal-header .medbeafgallery-image-controls .medbeafgallery-control-btn:not(.active) {
+  background: transparent !important;
+  color: #475569 !important;
+}
+
+.medbeafgallery-modal .medbeafgallery-modal-header .medbeafgallery-image-controls .medbeafgallery-control-btn:not(.active):hover {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.medbeafgallery-modal .medbeafgallery-modal-header .medbeafgallery-image-controls .medbeafgallery-control-btn.active {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18) !important;
+}
+
+.medbeafgallery-modal .medbeafgallery-image-controls .medbeafgallery-control-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  flex: 0 0 16px !important;
+}
+
+.medbeafgallery-control-label {
+  display: inline-block !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+  color: inherit !important;
+}
+
+/* Older Pro versions draw these controls themselves elsewhere; the label is
+   only for the header control group. */
+.medbeafgallery-image-controls:not(.medbeafgallery-modal-header *) .medbeafgallery-control-label {
+  display: none !important;
+}
+
+/* ==========================================================================
+   Category bar styles (Design → Category Navigation, or the shortcode's
+   category_style): carousel (above), grid, buttons and drop-down. Every style
+   keeps the same .medbeafgallery-carousel-item tiles in the page, so the
+   gallery's category handling and the Pro add-on work identically in each.
+   ========================================================================== */
+
+/* Grid: every category visible as image cards, wrapping onto new rows. */
+.medbeafgallery-category-carousel.medbeafgallery-grid-mode .medbeafgallery-carousel-wrapper {
+  padding: 8px 0 !important;
+  overflow: visible !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-grid-mode .medbeafgallery-carousel-items {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+  gap: 14px !important;
+  width: auto !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-grid-mode .medbeafgallery-carousel-item {
+  min-width: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+}
+
+@media (max-width: 600px) {
+  .medbeafgallery-category-carousel.medbeafgallery-grid-mode .medbeafgallery-carousel-items {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  /* Compact tiles, so eight categories do not fill the whole first screen. */
+  .medbeafgallery-category-carousel.medbeafgallery-grid-mode .medbeafgallery-carousel-item {
+    min-height: 0 !important;
+    padding: 10px 6px !important;
+  }
+
+  .medbeafgallery-category-carousel.medbeafgallery-grid-mode .medbeafgallery-carousel-item img,
+  .medbeafgallery-category-carousel.medbeafgallery-grid-mode .medbeafgallery-category-image svg {
+    width: 48px !important;
+    height: 48px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .medbeafgallery-category-carousel.medbeafgallery-grid-mode .medbeafgallery-carousel-item .medbeafgallery-category-name {
+    font-size: 0.75rem !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .medbeafgallery-category-carousel.medbeafgallery-grid-mode .medbeafgallery-carousel-items {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Buttons: compact text buttons that wrap — suits long or many category names. */
+.medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-nav-buttons,
+.medbeafgallery-category-carousel.medbeafgallery-dropdown-mode .medbeafgallery-nav-buttons {
+  display: none !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-buttons-mode {
+  margin: 24px 0 28px !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-carousel-wrapper {
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  border-radius: 0 !important;
+  background: none !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-carousel-items {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  width: auto !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-carousel-item {
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 44px !important;
+  margin: 0 !important;
+  padding: 10px 20px !important;
+  border: 1px solid #d5dde6 !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-carousel-item::after {
+  display: none !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-category-image {
+  display: none !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-carousel-item .medbeafgallery-category-name {
+  min-height: 0 !important;
+  font-size: 0.9375rem !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  color: #334155 !important;
+  white-space: nowrap !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-carousel-item:hover {
+  border-color: var(--medbeafgallery-primary-solid, #2563eb) !important;
+  background: var(--medbeafgallery-primary-10, rgba(37, 99, 235, 0.08)) !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-carousel-item.active {
+  border-color: var(--medbeafgallery-primary-solid, #2563eb) !important;
+  background: var(--medbeafgallery-primary-solid, #2563eb) !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-carousel-item.active .medbeafgallery-category-name {
+  color: #ffffff !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-carousel-item:focus-visible {
+  outline: 3px solid var(--medbeafgallery-primary-solid, #2563eb) !important;
+  outline-offset: 2px !important;
+}
+
+@media (max-width: 600px) {
+  /* One scrollable row on phones instead of a tall stack of buttons. */
+  .medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-carousel-wrapper {
+    overflow-x: auto !important;
+    margin: 0 -16px !important;
+    padding: 2px 16px 6px !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-carousel-wrapper::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-carousel-items {
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    width: max-content !important;
+  }
+
+  .medbeafgallery-category-carousel.medbeafgallery-buttons-mode .medbeafgallery-carousel-item {
+    padding: 10px 16px !important;
+  }
+}
+
+/* Drop-down menu: one compact control; the tiles stay in the page, hidden. */
+.medbeafgallery-category-carousel.medbeafgallery-dropdown-mode {
+  margin: 24px 0 28px !important;
+}
+
+.medbeafgallery-category-carousel.medbeafgallery-dropdown-mode .medbeafgallery-carousel-wrapper {
+  display: none !important;
+}
+
+.medbeafgallery-category-select-wrap {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px 14px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.medbeafgallery-category-select-label {
+  display: inline-block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 0.9375rem !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  color: #334155 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.medbeafgallery-category-select-shell {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  min-width: min(320px, 100%) !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+.medbeafgallery-category-select-wrap select.medbeafgallery-category-select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  margin: 0 !important;
+  padding: 0 46px 0 18px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 12px !important;
+  background: #ffffff none !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
+  color: #0f172a !important;
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  line-height: 46px !important;
+  text-indent: 0 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  cursor: pointer !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.medbeafgallery-category-select-wrap select.medbeafgallery-category-select:hover {
+  border-color: var(--medbeafgallery-primary-solid, #2563eb) !important;
+}
+
+.medbeafgallery-category-select-wrap select.medbeafgallery-category-select:focus,
+.medbeafgallery-category-select-wrap select.medbeafgallery-category-select:focus-visible {
+  outline: none !important;
+  border-color: var(--medbeafgallery-primary-solid, #2563eb) !important;
+  box-shadow: 0 0 0 3px var(--medbeafgallery-primary-20, rgba(37, 99, 235, 0.2)) !important;
+}
+
+.medbeafgallery-category-select-icon {
+  position: absolute !important;
+  top: 50% !important;
+  right: 16px !important;
+  width: 18px !important;
+  height: 18px !important;
+  margin: -9px 0 0 !important;
+  color: #475569 !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 600px) {
+  .medbeafgallery-category-select-wrap {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+  }
+
+  .medbeafgallery-category-select-shell {
+    display: flex !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
 }

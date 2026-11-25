@@ -177,6 +177,8 @@ function medbeafgallery_get_visible_category_terms() {
         return array();
     }
 
+    $terms = medbeafgallery_sort_category_terms($terms);
+
     $settings = medbeafgallery_get_settings();
 
     if (empty($settings['rollup_subcategory_counts'])) {
@@ -200,6 +202,170 @@ function medbeafgallery_get_visible_category_terms() {
     }
 
     return $terms;
+}
+
+/**
+ * Order categories the way the Categories screen arranges them: by the
+ * 'medbeafgallery_order' term meta it saves (0, 1, 2… among siblings), then by
+ * name. Categories nobody has arranged keep the old alphabetical order, after
+ * the arranged ones.
+ *
+ * @param WP_Term[] $terms Terms to sort.
+ * @return WP_Term[] Sorted terms (keys reset).
+ */
+function medbeafgallery_sort_category_terms($terms) {
+    if (!is_array($terms) || count($terms) < 2) {
+        return is_array($terms) ? array_values($terms) : array();
+    }
+
+    $ids = array();
+    foreach ($terms as $term) {
+        if ($term instanceof WP_Term) {
+            $ids[] = (int) $term->term_id;
+        }
+    }
+    if ($ids) {
+        // One query for every term's meta instead of one per term.
+        update_termmeta_cache($ids);
+    }
+
+    $order = function ($term) {
+        $value = get_term_meta($term->term_id, 'medbeafgallery_order', true);
+        return ($value === '' || $value === false || !is_numeric($value)) ? PHP_INT_MAX : (int) $value;
+    };
+
+    usort($terms, function ($a, $b) use ($order) {
+        $oa = $order($a);
+        $ob = $order($b);
+        if ($oa !== $ob) {
+            return $oa < $ob ? -1 : 1;
+        }
+        return strnatcasecmp($a->name, $b->name);
+    });
+
+    return array_values($terms);
+}
+
+/**
+ * Apply design values to a settings array: brand colour (hex or a plain CSS
+ * gradient), category style, subcategory counts, card style and case-window
+ * background. Only keys present in $input change; unknown values fall back to
+ * the defaults, as the settings form always did.
+ *
+ * @param array $settings Current settings.
+ * @param array $input    Unslashed values.
+ * @return array
+ */
+function medbeafgallery_apply_design_settings($settings, $input) {
+    $settings = is_array($settings) ? $settings : array();
+    $input = is_array($input) ? $input : array();
+
+    if (array_key_exists('gallery_primary_color', $input)) {
+        $color = trim(sanitize_text_field((string) $input['gallery_primary_color']));
+        if (strpos($color, 'gradient') !== false) {
+            // A plain linear/radial gradient only: it is written into a stylesheet.
+            $valid = strlen($color) < 500
+                && preg_match('/^(?:linear|radial)-gradient\([#a-z0-9\s.,%()+-]+\)$/i', $color)
+                && !preg_match('/url|expression|var\(/i', $color);
+            $settings['gallery_primary_color'] = $valid ? $color : '#3498db';
+        } else {
+            $settings['gallery_primary_color'] = sanitize_hex_color($color) ?: '#3498db';
+        }
+    }
+    if (array_key_exists('category_display_mode', $input)) {
+        $mode = sanitize_key((string) $input['category_display_mode']);
+        // Unknown values (say, a Pro style after Pro was switched off) fall back to the carousel.
+        $settings['category_display_mode'] = array_key_exists($mode, medbeafgallery_category_display_modes()) ? $mode : 'carousel';
+    }
+    if (array_key_exists('rollup_subcategory_counts', $input)) {
+        $settings['rollup_subcategory_counts'] = in_array($input['rollup_subcategory_counts'], array(true, 1, '1', 'true', 'on'), true);
+    }
+    if (array_key_exists('card_style', $input)) {
+        $card = sanitize_key((string) $input['card_style']);
+        $settings['card_style'] = in_array($card, array('split', 'reveal', 'refined'), true) ? $card : 'split';
+    }
+    if (array_key_exists('photo_backdrop', $input)) {
+        $backdrop = sanitize_key((string) $input['photo_backdrop']);
+        $settings['photo_backdrop'] = in_array($backdrop, array('blur', 'plain'), true) ? $backdrop : 'blur';
+    }
+
+    return $settings;
+}
+
+/**
+ * Save design values (see medbeafgallery_apply_design_settings()). Used by the
+ * Pro add-on's Design screens; the caller checks the capability and nonce.
+ *
+ * @param array $input Unslashed values.
+ * @return array The saved settings.
+ */
+function medbeafgallery_save_design_settings($input) {
+    $settings = get_option('medbeafgallery_settings', array());
+    $settings = medbeafgallery_apply_design_settings(is_array($settings) ? $settings : array(), $input);
+    update_option('medbeafgallery_settings', $settings);
+    return $settings;
+}
+
+/**
+ * Where "Manage categories" links go: the plugin's Categories screen
+ * (admin/categories-manager.php), else WordPress's term screen.
+ *
+ * @return string
+ */
+function medbeafgallery_categories_admin_url() {
+    if (defined('MEDBEAFGALLERY_CATEGORIES_PAGE')) {
+        return admin_url('admin.php?page=' . MEDBEAFGALLERY_CATEGORIES_PAGE);
+    }
+    return admin_url('edit-tags.php?taxonomy=medbeafgallery_category&post_type=medbeafgallery_case');
+}
+
+/**
+ * Category bar styles visitors can see. Free offers four; the Pro add-on adds
+ * its own through the 'medbeafgallery_category_display_modes' filter.
+ *
+ * @return array mode => label
+ */
+function medbeafgallery_category_display_modes() {
+    $modes = array(
+        'carousel' => __('Carousel — image cards in one row that scrolls sideways', 'medical-before-after-gallery'),
+        'grid'     => __('Grid — every category visible as image cards', 'medical-before-after-gallery'),
+        'buttons'  => __('Buttons — compact text buttons that wrap onto several lines', 'medical-before-after-gallery'),
+        'dropdown' => __('Drop-down menu — one compact list, good for many categories', 'medical-before-after-gallery'),
+    );
+
+    $filtered = apply_filters('medbeafgallery_category_display_modes', $modes);
+
+    return is_array($filtered) && !empty($filtered) ? $filtered : $modes;
+}
+
+/**
+ * The category bar style for one gallery: the shortcode's category_style when
+ * it names a known style, else the saved setting, else the carousel.
+ *
+ * @param string $requested Optional shortcode value.
+ * @return string Mode key.
+ */
+function medbeafgallery_get_category_display_mode($requested = '') {
+    $modes = medbeafgallery_category_display_modes();
+    $requested = sanitize_key((string) $requested);
+
+    if ($requested !== '' && isset($modes[$requested])) {
+        $mode = $requested;
+    } else {
+        $settings = medbeafgallery_get_settings();
+        $saved = isset($settings['category_display_mode']) ? sanitize_key($settings['category_display_mode']) : 'carousel';
+        $mode = isset($modes[$saved]) ? $saved : 'carousel';
+    }
+
+    /**
+     * Filters the category bar style of one gallery.
+     *
+     * @param string $mode      Mode key.
+     * @param string $requested The shortcode's category_style ('' when not given).
+     */
+    $mode = sanitize_key((string) apply_filters('medbeafgallery_category_display_mode', $mode, $requested));
+
+    return isset($modes[$mode]) ? $mode : 'carousel';
 }
 
 /**
@@ -331,9 +497,8 @@ function medbeafgallery_get_category_image_url($term_id, $size = 'thumbnail') {
  */
 class MedBeAfGallerySettings {
     private static $defaults = array(
-        'consultation_enabled' => true,
-        'consultation_url' => '',
-        'consultation_text' => 'Schedule a Consultation',
+        // No consultation_* keys: the free plugin never rendered a booking button
+        // (the booking button is a Pro feature, under Display Options).
         'cropping_enabled' => true,
         'cropping_size' => 800,
         'cropping_width' => 800,
@@ -344,7 +509,16 @@ class MedBeAfGallerySettings {
         'delete_data_on_uninstall' => false,
         // Off by default: turning this on changes the case numbers visitors see
         // on parent category tiles.
-        'rollup_subcategory_counts' => false
+        'rollup_subcategory_counts' => false,
+        // 'split' = before and after halves side by side (unchanged look);
+        // 'reveal' = the before photo, wiping to the after photo on hover/hold;
+        // 'refined' = the same wipe on portrait photos without boxes.
+        'card_style' => 'split',
+        // What fills the case window around a photo that does not fill it:
+        // 'blur' = a blurred, darkened copy of the photo; 'plain' = black.
+        'photo_backdrop' => 'blur',
+        // How the category bar looks: see medbeafgallery_category_display_modes().
+        'category_display_mode' => 'carousel'
     );
 
     /**
@@ -586,7 +760,18 @@ function medbeafgallery_allowed_svg_html() {
         )),
         'tspan'    => array_merge($shared, array('x' => true, 'y' => true, 'dx' => true, 'dy' => true)),
         'title'    => array(),
+        // The category bar's drop-down style.
+        'select'   => array('id' => true, 'class' => true, 'name' => true, 'aria-label' => true, 'aria-describedby' => true),
+        'option'   => array('value' => true, 'selected' => true, 'disabled' => true),
+        'label'    => array('for' => true, 'class' => true, 'id' => true),
     ));
+    // Category tiles are keyboard-operable divs (role="button").
+    if (isset($allowed['div']) && is_array($allowed['div'])) {
+        $allowed['div']['tabindex'] = true;
+        $allowed['div']['role'] = true;
+        $allowed['div']['aria-pressed'] = true;
+        $allowed['div']['aria-label'] = true;
+    }
 
     return $allowed;
 }
@@ -760,8 +945,8 @@ function medbeafgallery_output_custom_colors() {
             background: var(--medbeafgallery-primary-20) !important;
         }
 
-        /* Focus States */
-        .medbeafgallery-carousel-item:focus,
+        /* Focus States (keyboard only: a mouse click must not leave a box around the tile) */
+        .medbeafgallery-carousel-item:focus-visible,
         .medbeafgallery-gallery-item:focus-visible,
         .medbeafgallery-tab:focus-visible,
         .medbeafgallery-modal-prev:focus-visible,
@@ -770,7 +955,7 @@ function medbeafgallery_output_custom_colors() {
             outline: 2px solid var(--medbeafgallery-primary-solid) !important;
         }
 
-        .medbeafgallery-carousel-item:focus {
+        .medbeafgallery-carousel-item:focus-visible {
             border-color: var(--medbeafgallery-primary-solid) !important;
             box-shadow: 0 0 0 3px var(--medbeafgallery-primary-10) !important;
         }

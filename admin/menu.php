@@ -36,14 +36,27 @@ function medbeafgallery_admin_menu() {
     );
 
     // All Cases menu item
-    add_submenu_page(
-        'medbeafgallery-gallery',
-        esc_html__('All Cases', 'medical-before-after-gallery'),
-        esc_html__('All Cases', 'medical-before-after-gallery'),
-        'manage_options',
-        'edit.php?post_type=medbeafgallery_case',
-        ''
-    );
+    if (defined('MEDBEAFGALLERY_CASES_PAGE') && function_exists('medbeafgallery_cases_manager_page')) {
+        // The plugin's own Cases screen (admin/cases-manager.php); WordPress's
+        // list table stays reachable from its "Classic list" link.
+        add_submenu_page(
+            'medbeafgallery-gallery',
+            esc_html__('Cases', 'medical-before-after-gallery'),
+            esc_html__('All Cases', 'medical-before-after-gallery'),
+            'manage_options',
+            MEDBEAFGALLERY_CASES_PAGE,
+            'medbeafgallery_cases_manager_page'
+        );
+    } else {
+        add_submenu_page(
+            'medbeafgallery-gallery',
+            esc_html__('All Cases', 'medical-before-after-gallery'),
+            esc_html__('All Cases', 'medical-before-after-gallery'),
+            'manage_options',
+            'edit.php?post_type=medbeafgallery_case',
+            ''
+        );
+    }
 
     add_submenu_page(
         'medbeafgallery-gallery',
@@ -56,14 +69,27 @@ function medbeafgallery_admin_menu() {
 
     // Check if the taxonomy exists before adding the menu
     if (taxonomy_exists('medbeafgallery_category')) {
-        add_submenu_page(
-            'medbeafgallery-gallery',
-            esc_html__('Categories', 'medical-before-after-gallery'),
-            esc_html__('Categories', 'medical-before-after-gallery'),
-            'manage_options',
-            'edit-tags.php?taxonomy=medbeafgallery_category&post_type=medbeafgallery_case',
-            ''
-        );
+        if (defined('MEDBEAFGALLERY_CATEGORIES_PAGE') && function_exists('medbeafgallery_categories_manager_page')) {
+            // The plugin's own Categories screen (admin/categories-manager.php);
+            // WordPress's term screen stays reachable from its "Advanced" link.
+            add_submenu_page(
+                'medbeafgallery-gallery',
+                esc_html__('Categories', 'medical-before-after-gallery'),
+                esc_html__('Categories', 'medical-before-after-gallery'),
+                'manage_options',
+                MEDBEAFGALLERY_CATEGORIES_PAGE,
+                'medbeafgallery_categories_manager_page'
+            );
+        } else {
+            add_submenu_page(
+                'medbeafgallery-gallery',
+                esc_html__('Categories', 'medical-before-after-gallery'),
+                esc_html__('Categories', 'medical-before-after-gallery'),
+                'manage_options',
+                'edit-tags.php?taxonomy=medbeafgallery_category&post_type=medbeafgallery_case',
+                ''
+            );
+        }
     }
 
     // Add Pro Features page only if Pro is NOT active
@@ -106,9 +132,18 @@ add_filter('parent_file', 'medbeafgallery_fix_submenu_highlighting');
 function medbeafgallery_fix_submenu($submenu_file) {
     global $current_screen, $pagenow;
 
-    // Highlight the All Cases submenu when on the case edit screen
-    if ($pagenow === 'post.php' && $current_screen->post_type === 'medbeafgallery_case') {
-        $submenu_file = 'edit.php?post_type=medbeafgallery_case';
+    // Highlight the All Cases submenu on the case edit screen and, when the
+    // Cases screen exists, on WordPress's own list table ("Classic list").
+    if ($current_screen && $current_screen->post_type === 'medbeafgallery_case'
+        && ($pagenow === 'post.php' || $pagenow === 'edit.php')) {
+        $submenu_file = (defined('MEDBEAFGALLERY_CASES_PAGE') && function_exists('medbeafgallery_cases_manager_page'))
+            ? MEDBEAFGALLERY_CASES_PAGE
+            : 'edit.php?post_type=medbeafgallery_case';
+    }
+
+    // WordPress's own category screens ("Advanced") still belong to Categories.
+    if ($current_screen && $current_screen->taxonomy === 'medbeafgallery_category' && defined('MEDBEAFGALLERY_CATEGORIES_PAGE')) {
+        $submenu_file = MEDBEAFGALLERY_CATEGORIES_PAGE;
     }
 
     return $submenu_file;
@@ -184,7 +219,7 @@ function medbeafgallery_pro_features_page() {
         <div class="medbeafgallery-offer-banner">
             <div class="offer-badge">
                 <span class="dashicons dashicons-tag"></span>
-                <?php esc_html_e('LIMITED TIME OFFER', 'medical-before-after-gallery'); ?>
+                <?php esc_html_e('PAY ONCE', 'medical-before-after-gallery'); ?>
             </div>
             <h2><?php esc_html_e('Upgrade to the Pro Add-on - One-Time Payment', 'medical-before-after-gallery'); ?></h2>
             <div class="pricing-box">
@@ -284,7 +319,7 @@ function medbeafgallery_pro_features_page() {
                 </div>
             </div>
             <p class="roi-description">
-                <?php esc_html_e('Just one new patient from your improved gallery pays for itself hundreds of times over. Showcase your work professionally and attract more clients!', 'medical-before-after-gallery'); ?>
+                <?php esc_html_e('If your gallery helps bring in even one new patient, Pro can pay for itself. Showcase your work professionally and attract more clients!', 'medical-before-after-gallery'); ?>
             </p>
         </div>
 
@@ -344,6 +379,26 @@ function medbeafgallery_pro_features_page() {
                     <tr>
                         <td><?php esc_html_e('Category Navigation', 'medical-before-after-gallery'); ?></td>
                         <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
+                        <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
+                    </tr>
+                    <?php
+                    // Features both versions have (free 1.5.0).
+                    foreach (array(
+                        __('Hover-Reveal Cards', 'medical-before-after-gallery'),
+                        __('Blurred Photo Background in the Case Window', 'medical-before-after-gallery'),
+                        __('Doctor Cards', 'medical-before-after-gallery'),
+                        __('Category Styles: Carousel, Grid, Buttons, Drop-down', 'medical-before-after-gallery'),
+                        __('Categories Screen with Drag-and-Drop Order', 'medical-before-after-gallery'),
+                    ) as $medbeafgallery_both) : ?>
+                    <tr>
+                        <td><?php echo esc_html($medbeafgallery_both); ?></td>
+                        <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
+                        <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <tr class="pro-feature">
+                        <td><?php esc_html_e('Category Tabs and Photo Pills', 'medical-before-after-gallery'); ?></td>
+                        <td><span class="dashicons dashicons-dismiss feature-not-included"></span></td>
                         <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
                     </tr>
                     <tr class="pro-feature">
@@ -416,6 +471,24 @@ function medbeafgallery_pro_features_page() {
                         <td><span class="dashicons dashicons-dismiss feature-not-included"></span></td>
                         <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
                     </tr>
+                    <?php
+                    // Pro 1.6.0 additions.
+                    foreach (array(
+                        __('Case-Window Styles: Cinema, Drawer, Comparison Desk, Case Story, Phone Story Mode', 'medical-before-after-gallery'),
+                        __('Gallery Layouts and Style Presets', 'medical-before-after-gallery'),
+                        __('Progress Timeline with Dated Photos', 'medical-before-after-gallery'),
+                        __('"Find by Area" Body Map and "Help Me Choose"', 'medical-before-after-gallery'),
+                        __('Ghost Camera, Photo Line-Up Tool and Transformation Reels', 'medical-before-after-gallery'),
+                        __('Filter by Doctor', 'medical-before-after-gallery'),
+                        __('Eight Category Styles, with Icons You Choose', 'medical-before-after-gallery'),
+                        __('Setup Wizard, Live Preview and Ready-to-Publish Checklist', 'medical-before-after-gallery'),
+                    ) as $medbeafgallery_pro_only) : ?>
+                    <tr class="pro-feature">
+                        <td><?php echo esc_html($medbeafgallery_pro_only); ?></td>
+                        <td><span class="dashicons dashicons-dismiss feature-not-included"></span></td>
+                        <td><span class="dashicons dashicons-yes-alt feature-included"></span></td>
+                    </tr>
+                    <?php endforeach; ?>
                     <tr class="pro-feature">
                         <td><?php esc_html_e('Premium Support', 'medical-before-after-gallery'); ?></td>
                         <td><span class="dashicons dashicons-dismiss feature-not-included"></span></td>
@@ -429,6 +502,38 @@ function medbeafgallery_pro_features_page() {
             <h3><?php esc_html_e('Pro Features Highlights', 'medical-before-after-gallery'); ?></h3>
 
             <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="dashicons dashicons-welcome-view-site"></span>
+                    </div>
+                    <h4><?php esc_html_e('Case-Window Styles', 'medical-before-after-gallery'); ?></h4>
+                    <p><?php esc_html_e('Cinema, side drawer, a comparison desk with a linked magnifier, a scrolling case story — and a swipeable story mode on phones.', 'medical-before-after-gallery'); ?></p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="dashicons dashicons-chart-line"></span>
+                    </div>
+                    <h4><?php esc_html_e('Progress Timeline', 'medical-before-after-gallery'); ?></h4>
+                    <p><?php esc_html_e('Show real, dated photos from each stage — 6 weeks, 3 months, 1 year — on a scrubber. Never blended or invented.', 'medical-before-after-gallery'); ?></p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="dashicons dashicons-location"></span>
+                    </div>
+                    <h4><?php esc_html_e('Find by Area & Help Me Choose', 'medical-before-after-gallery'); ?></h4>
+                    <p><?php esc_html_e('Visitors tap the nose, lips, teeth or abdomen on a body map, or answer two or three questions, to see matching cases.', 'medical-before-after-gallery'); ?></p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <span class="dashicons dashicons-camera"></span>
+                    </div>
+                    <h4><?php esc_html_e('Ghost Camera & Reels', 'medical-before-after-gallery'); ?></h4>
+                    <p><?php esc_html_e('Take the after photo with the before photo as a ghost guide, line up pairs, and export a short before-and-after video for social media.', 'medical-before-after-gallery'); ?></p>
+                </div>
+
                 <div class="feature-card">
                     <div class="feature-icon">
                         <span class="dashicons dashicons-grid-view"></span>
@@ -486,7 +591,7 @@ function medbeafgallery_pro_features_page() {
                     <?php esc_html_e('BEST VALUE', 'medical-before-after-gallery'); ?>
                 </span>
                 <h3><?php esc_html_e('Ready to Upgrade to the Pro Add-on?', 'medical-before-after-gallery'); ?></h3>
-                <p class="cta-tagline"><?php esc_html_e('Join hundreds of medical professionals who trust our plugin to showcase their work professionally.', 'medical-before-after-gallery'); ?></p>
+                <p class="cta-tagline"><?php esc_html_e('Every Pro feature for a one-time payment, with updates included.', 'medical-before-after-gallery'); ?></p>
                 
                 <div class="cta-features-mini">
                     <div class="mini-feature">
@@ -530,26 +635,47 @@ function medbeafgallery_pro_features_page() {
             </div>
         </div>
 
-        <!-- Testimonial Section -->
+        <!-- Reviews: real, public WordPress.org reviews of the free plugin, quoted
+             verbatim and linked. Not translatable on purpose — they are quotes. -->
+        <?php
+        $medbeafgallery_reviews = array(
+            array(
+                'text'   => 'Really happy with this plugin! I run a small clinic and needed a clean way to show before-and-after results. Setup was super easy, the slider looks professional, and it works great on mobile too.',
+                'author' => __('Anonymous reviewer', 'medical-before-after-gallery'),
+                'url'    => 'https://wordpress.org/support/topic/best-before-after-plugin-ive-tried/',
+            ),
+            array(
+                'text'   => 'This is by far the best WordPress before and after image tool i found on the internet. Easy to use, reliable, and low impact on site.',
+                'author' => 'yourguru16',
+                'url'    => 'https://wordpress.org/support/topic/most-complete-before-and-after-gallery-tool/',
+            ),
+            array(
+                'text'   => 'I love how it displays on mobile, way it shows before afters with split view, before only view and after only view. just love this plugin',
+                'author' => 'alex7087',
+                'url'    => 'https://wordpress.org/support/topic/love-it-4303/',
+            ),
+        );
+        ?>
         <div class="testimonials-section">
-            <h3><?php esc_html_e('What Medical Professionals Are Saying', 'medical-before-after-gallery'); ?></h3>
+            <h3><?php esc_html_e('What users say on WordPress.org', 'medical-before-after-gallery'); ?></h3>
             <div class="testimonials-grid">
+                <?php foreach ($medbeafgallery_reviews as $medbeafgallery_review) : ?>
                 <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <p class="testimonial-text"><?php esc_html_e('"Best money I\'ve spent on my practice website. The before-after galleries look incredibly professional and have helped convert more inquiries into actual patients."', 'medical-before-after-gallery'); ?></p>
-                    <p class="testimonial-author"><?php esc_html_e('- Dr. Sarah M., Cosmetic Surgeon', 'medical-before-after-gallery'); ?></p>
+                    <div class="stars" aria-label="<?php esc_attr_e('5 out of 5 stars', 'medical-before-after-gallery'); ?>">★★★★★</div>
+                    <p class="testimonial-text">&ldquo;<?php echo esc_html($medbeafgallery_review['text']); ?>&rdquo;</p>
+                    <p class="testimonial-author">
+                        &mdash; <a href="<?php echo esc_url($medbeafgallery_review['url']); ?>" target="_blank" rel="noopener noreferrer"><?php
+                        /* translators: %s: reviewer's WordPress.org username */
+                        echo esc_html(sprintf(__('%s on WordPress.org', 'medical-before-after-gallery'), $medbeafgallery_review['author']));
+                        ?></a>
+                    </p>
                 </div>
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <p class="testimonial-text"><?php esc_html_e('"The unlimited cases and watermarking features alone are worth it. Setup was easy and the support team is fantastic."', 'medical-before-after-gallery'); ?></p>
-                    <p class="testimonial-author"><?php esc_html_e('- Dr. James L., Dental Practice', 'medical-before-after-gallery'); ?></p>
-                </div>
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <p class="testimonial-text"><?php esc_html_e('"The ROI on this plugin is incredible. Paid for itself with one consultation. The filtering options help patients find exactly what they\'re looking for."', 'medical-before-after-gallery'); ?></p>
-                    <p class="testimonial-author"><?php esc_html_e('- Dr. Maria K., Dermatologist', 'medical-before-after-gallery'); ?></p>
-                </div>
+                <?php endforeach; ?>
             </div>
+            <p class="testimonials-source">
+                <?php esc_html_e('Reviews of the free plugin.', 'medical-before-after-gallery'); ?>
+                <a href="https://wordpress.org/support/plugin/medical-before-after-gallery/reviews/" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Read all reviews', 'medical-before-after-gallery'); ?></a>
+            </p>
         </div>
 
         <!-- FAQ Section -->

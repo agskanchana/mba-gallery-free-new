@@ -24,15 +24,18 @@ function medbeafgallery_add_metaboxes() {
         'high'
     );
 
-    // Case Details (PRO - Locked in Free Version)
-    add_meta_box(
-        'medbeafgallery_case_details',
-        esc_html__('Case Details', 'medical-before-after-gallery'),
-        'medbeafgallery_case_details_metabox',
-        'medbeafgallery_case',
-        'normal',
-        'default'
-    );
+    // Case Details — filled by the Pro add-on's filter fields. Without a Pro
+    // licence there is nothing to edit, so no box (it used to show a locked copy).
+    if (apply_filters('medbeafgallery_has_valid_pro_license', false)) {
+        add_meta_box(
+            'medbeafgallery_case_details',
+            esc_html__('Case Details', 'medical-before-after-gallery'),
+            'medbeafgallery_case_details_metabox',
+            'medbeafgallery_case',
+            'normal',
+            'default'
+        );
+    }
 
     // Shortcode Display
     add_meta_box(
@@ -209,66 +212,13 @@ function medbeafgallery_image_pairs_metabox($post) {
         </script>
 
         <?php else :
-            // ── FREE VERSION: Show locked promo ──
+            // ── No Pro licence: a one-line pointer instead of a locked copy ──
         ?>
-        <div class="medbeafgallery-pro-metabox-section">
-            <div class="medbeafgallery-pro-section-header">
-                <h3><?php esc_html_e('Additional Image Pairs (Optional)', 'medical-before-after-gallery'); ?></h3>
-                <span class="medbeafgallery-pro-badge">
-                    <span class="dashicons dashicons-lock"></span> PRO
-                </span>
-            </div>
-
-            <div class="medbeafgallery-pro-overlay">
-                <div class="medbeafgallery-pro-overlay-content">
-                    <span class="dashicons dashicons-lock"></span>
-                    <p><?php esc_html_e('This feature is available in the Pro Add-on', 'medical-before-after-gallery'); ?></p>
-                    <p class="pro-price-small"><strong><?php esc_html_e('One-time payment · Lifetime access', 'medical-before-after-gallery'); ?></strong></p>
-                    <a href="https://medicalbeforeaftergallery.com/#pricing" target="_blank" class="button button-primary">
-                        <?php esc_html_e('Get the Pro Add-on', 'medical-before-after-gallery'); ?>
-                    </a>
-                </div>
-            </div>
-
-            <div class="medbeafgallery-pro-content">
-                <p class="description"><?php esc_html_e('Add multiple before/after image pairs for different views or angles.', 'medical-before-after-gallery'); ?></p>
-                
-                <!-- Sample Additional Pair -->
-                <div class="medbeafgallery-image-pair medbeafgallery-additional-pair">
-                    <div class="medbeafgallery-pair-header">
-                        <span><?php esc_html_e('Image Pair #1', 'medical-before-after-gallery'); ?></span>
-                        <button type="button" class="button" disabled><?php esc_html_e('Remove', 'medical-before-after-gallery'); ?></button>
-                    </div>
-                    <div class="medbeafgallery-image-pair-row">
-                        <div class="medbeafgallery-image-pair-column">
-                            <div class="medbeafgallery-image-container">
-                                <label><?php esc_html_e('Before Image', 'medical-before-after-gallery'); ?></label>
-                                <div class="medbeafgallery-image-preview"></div>
-                                <button type="button" class="button" disabled><?php esc_html_e('Upload Before Image', 'medical-before-after-gallery'); ?></button>
-                            </div>
-                        </div>
-                        <div class="medbeafgallery-image-pair-column">
-                            <div class="medbeafgallery-image-container">
-                                <label><?php esc_html_e('After Image', 'medical-before-after-gallery'); ?></label>
-                                <div class="medbeafgallery-image-preview"></div>
-                                <button type="button" class="button" disabled><?php esc_html_e('Upload After Image', 'medical-before-after-gallery'); ?></button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="medbeafgallery-image-description">
-                        <label><?php esc_html_e('View Description:', 'medical-before-after-gallery'); ?></label>
-                        <input type="text" class="regular-text" placeholder="<?php esc_attr_e('e.g. Front View', 'medical-before-after-gallery'); ?>" disabled>
-                    </div>
-                </div>
-
-                <div class="medbeafgallery-add-pair-container">
-                    <button type="button" class="button" disabled>
-                        <span class="dashicons dashicons-plus-alt"></span>
-                        <?php esc_html_e('Add Additional Image Pair', 'medical-before-after-gallery'); ?>
-                    </button>
-                </div>
-            </div>
-        </div>
+        <p class="description medbeafgallery-pro-hint">
+            <span class="dashicons dashicons-star-filled" aria-hidden="true"></span>
+            <?php esc_html_e('More angles per case, case details and dated progress photos come with the Pro add-on.', 'medical-before-after-gallery'); ?>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=medbeafgallery-gallery-pro-features')); ?>"><?php esc_html_e('See Pro features', 'medical-before-after-gallery'); ?></a>
+        </p>
         <?php endif; ?>
     </div>
     <?php
@@ -293,104 +243,9 @@ function medbeafgallery_case_details_metabox($post) {
         return;
     }
 
-    // ── Free / no Pro: locked promo ──
-    ?>
-    <div class="medbeafgallery-admin-metabox medbeafgallery-pro-metabox">
-        <div class="medbeafgallery-pro-metabox-header">
-            <p class="description"><?php esc_html_e('These details will be used for filtering and displaying information about the case.', 'medical-before-after-gallery'); ?></p>
-            <span class="medbeafgallery-pro-badge">
-                <span class="dashicons dashicons-lock"></span> PRO
-            </span>
-        </div>
-
-        <div class="medbeafgallery-pro-overlay">
-            <div class="medbeafgallery-pro-overlay-content">
-                <span class="dashicons dashicons-lock"></span>
-                <p><?php esc_html_e('This feature is available in the Pro Add-on', 'medical-before-after-gallery'); ?></p>
-                <p class="pro-price-small"><strong><?php esc_html_e('One-time payment · Lifetime access', 'medical-before-after-gallery'); ?></strong></p>
-                <a href="https://medicalbeforeaftergallery.com/#pricing" target="_blank" class="button button-primary">
-                    <?php esc_html_e('Get the Pro Add-on', 'medical-before-after-gallery'); ?>
-                </a>
-            </div>
-        </div>
-
-        <div class="medbeafgallery-pro-content">
-            <table class="form-table medbeafgallery-case-details">
-                <tr>
-                    <th scope="row"><label><?php esc_html_e('Gender', 'medical-before-after-gallery'); ?></label></th>
-                    <td>
-                        <select disabled>
-                            <option><?php esc_html_e('Select Gender', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('Male', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('Female', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('Other', 'medical-before-after-gallery'); ?></option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><label><?php esc_html_e('Age Range', 'medical-before-after-gallery'); ?></label></th>
-                    <td>
-                        <select disabled>
-                            <option><?php esc_html_e('Select Age Range', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('18-25', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('26-35', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('36-45', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('46-55', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('56+', 'medical-before-after-gallery'); ?></option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><label><?php esc_html_e('Recovery Time', 'medical-before-after-gallery'); ?></label></th>
-                    <td>
-                        <select disabled>
-                            <option><?php esc_html_e('Select Recovery Time', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('1-3 days', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('1 week', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('2 weeks', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('1 month', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('3+ months', 'medical-before-after-gallery'); ?></option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><label><?php esc_html_e('Treatment Duration', 'medical-before-after-gallery'); ?></label></th>
-                    <td>
-                        <select disabled>
-                            <option><?php esc_html_e('Select Treatment Duration', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('Single session', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('Multiple sessions', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('Ongoing', 'medical-before-after-gallery'); ?></option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><label><?php esc_html_e('Results Visibility', 'medical-before-after-gallery'); ?></label></th>
-                    <td>
-                        <select disabled>
-                            <option><?php esc_html_e('Select Results Visibility', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('Immediate', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('1-2 weeks', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('1 month', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('3+ months', 'medical-before-after-gallery'); ?></option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><label><?php esc_html_e('Procedure Type', 'medical-before-after-gallery'); ?></label></th>
-                    <td>
-                        <select disabled>
-                            <option><?php esc_html_e('Select Procedure Type', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('Surgical', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('Non-surgical', 'medical-before-after-gallery'); ?></option>
-                            <option><?php esc_html_e('Minimally invasive', 'medical-before-after-gallery'); ?></option>
-                        </select>
-                    </td>
-                </tr>
-            </table>
-        </div>
-    </div>
-    <?php
+    // ── No Pro licence: the box is not registered (see medbeafgallery_add_metaboxes());
+    //    this fallback only runs if something else adds it. ──
+    echo '<p class="description">' . esc_html__('Case details come with the Pro add-on.', 'medical-before-after-gallery') . '</p>';
 }
 
 /**

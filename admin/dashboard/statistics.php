@@ -40,8 +40,11 @@ function medbeafgallery_get_dashboard_statistics() {
         $additional_pairs = get_post_meta($case_id, '_medbeafgallery_additional_image_pairs', true);
         if(is_array($additional_pairs)) {
             foreach($additional_pairs as $pair) {
-                if(!empty($pair['before_id'])) $total_images++;
-                if(!empty($pair['after_id'])) $total_images++;
+                // Pro saves before_image/after_image; before_id/after_id is an older
+                // spelling the gallery also reads. Counting only the latter missed
+                // every additional pair.
+                if(!empty($pair['before_image']) || !empty($pair['before_id'])) $total_images++;
+                if(!empty($pair['after_image']) || !empty($pair['after_id'])) $total_images++;
             }
         }
     }
@@ -93,7 +96,7 @@ function medbeafgallery_display_statistics($stats) {
                     <a href="https://medicalbeforeaftergallery.com/" target="_blank"><?php esc_html_e('Upgrade to Pro', 'medical-before-after-gallery'); ?></a>
                 </p>
             <?php endif; ?>
-            <a href="<?php echo esc_url(admin_url('edit.php?post_type=medbeafgallery_case')); ?>" class="medbeafgallery-stat-link">
+            <a href="<?php echo esc_url(function_exists('medbeafgallery_cs_url') ? medbeafgallery_cs_url() : admin_url('edit.php?post_type=medbeafgallery_case')); ?>" class="medbeafgallery-stat-link">
                 <?php esc_html_e('View All', 'medical-before-after-gallery'); ?> →
             </a>
         </div>
@@ -117,7 +120,7 @@ function medbeafgallery_display_statistics($stats) {
                     <a href="https://medicalbeforeaftergallery.com/" target="_blank"><?php esc_html_e('Upgrade to Pro', 'medical-before-after-gallery'); ?></a>
                 </p>
             <?php endif; ?>
-            <a href="<?php echo esc_url(admin_url('edit-tags.php?taxonomy=medbeafgallery_category&post_type=medbeafgallery_case')); ?>" class="medbeafgallery-stat-link">
+            <a href="<?php echo esc_url(medbeafgallery_categories_admin_url()); ?>" class="medbeafgallery-stat-link">
                 <?php esc_html_e('Manage', 'medical-before-after-gallery'); ?> →
             </a>
         </div>

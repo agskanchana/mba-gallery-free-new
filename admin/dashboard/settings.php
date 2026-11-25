@@ -31,9 +31,6 @@ if (!defined('ABSPATH')) {
 function medbeafgallery_display_settings_form($settings) {
     // Add default values if not set
     $settings = wp_parse_args($settings, array(
-        'consultation_enabled' => true,
-        'consultation_url' => '',
-        'consultation_text' => 'Schedule a Consultation',
         'content_warning_enabled' => false,
         'content_warning_title' => 'Content Warning',
         'content_warning_text' => 'This gallery contains before and after medical images which may include sensitive content.',

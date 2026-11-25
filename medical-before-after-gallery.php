@@ -3,7 +3,7 @@
  * Plugin Name: Medical Before After Gallery
  * Plugin URI: https://medicalbeforeaftergallery.com/
  * Description: Professional before-after image gallery plugin with filtering and categories for healthcare professionals. Free version with core features.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Author: Medical Before After Gallery
  * Text Domain: medical-before-after-gallery
  * Domain Path: /languages
@@ -164,7 +164,7 @@ function medbeafgallery_uninstall_site_cleanup() {
         }
 
         // Remove custom taxonomy terms
-        $taxonomies = array('medbeafgallery_category');
+        $taxonomies = array('medbeafgallery_category', 'medbeafgallery_doctor');
 
         foreach ($taxonomies as $taxonomy) {
             $terms = get_terms(array(
@@ -230,15 +230,38 @@ function medbeafgallery_advanced_filters_enabled() {
 
 
 // Define plugin constants
-define('MEDBEAFGALLERY_VERSION', '1.4.0');
+define('MEDBEAFGALLERY_VERSION', '1.5.0');
 define('MEDBEAFGALLERY_DB_VERSION', '1.0.0');
 // The Pro add-on release this version was built and tested with. An older Pro
 // keeps working; the owner is asked to update it (includes/pro-compat.php).
 // Raise it whenever a release depends on a matching Pro change.
-define('MEDBEAFGALLERY_RECOMMENDED_PRO_VERSION', '1.5.0');
+define('MEDBEAFGALLERY_RECOMMENDED_PRO_VERSION', '1.6.0');
 define('MEDBEAFGALLERY_PATH', plugin_dir_path(__FILE__));
 define('MEDBEAFGALLERY_URL', plugin_dir_url(__FILE__));
 define('MEDBEAFGALLERY_BASENAME', plugin_basename(__FILE__));
+
+/**
+ * Adds each file's modification time to the version of this plugin's own
+ * scripts and styles, so browsers do not keep running a cached copy after an
+ * update. Only URLs under this plugin are touched.
+ */
+function medbeafgallery_asset_cache_buster($src) {
+    if (!is_string($src) || '' === $src || 0 !== strpos($src, MEDBEAFGALLERY_URL)) {
+        return $src;
+    }
+    $parts    = explode('?', $src, 2);
+    $relative = substr($parts[0], strlen(MEDBEAFGALLERY_URL));
+    if ('' === $relative || false !== strpos($relative, '..')) {
+        return $src;
+    }
+    $file = MEDBEAFGALLERY_PATH . $relative;
+    if (!is_file($file)) {
+        return $src;
+    }
+    return add_query_arg('ver', MEDBEAFGALLERY_VERSION . '.' . filemtime($file), $src);
+}
+add_filter('script_loader_src', 'medbeafgallery_asset_cache_buster');
+add_filter('style_loader_src', 'medbeafgallery_asset_cache_buster');
 
 /**
  * Database version check and upgrade
@@ -496,6 +519,7 @@ add_action('admin_notices', 'medbeafgallery_admin_health_notice');
 // Include required files
 require_once MEDBEAFGALLERY_PATH . 'includes/utilities.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/post-types.php';
+require_once MEDBEAFGALLERY_PATH . 'includes/doctors.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/shortcodes.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/admin-functions.php';
 require_once MEDBEAFGALLERY_PATH . 'includes/rest.php';
@@ -505,6 +529,12 @@ require_once MEDBEAFGALLERY_PATH . 'includes/pro-compat.php';
 // Include admin files
 if (is_admin()) {
     require_once MEDBEAFGALLERY_PATH . 'admin/metaboxes.php';
+    // The Categories screen (also serves its admin-ajax actions).
+    require_once MEDBEAFGALLERY_PATH . 'admin/categories-manager.php';
+    // The Doctors and Cases screens (with their admin-ajax actions) and the case editor layout.
+    require_once MEDBEAFGALLERY_PATH . 'admin/doctors-manager.php';
+    require_once MEDBEAFGALLERY_PATH . 'admin/cases-manager.php';
+    require_once MEDBEAFGALLERY_PATH . 'admin/case-editor.php';
 }
 
 // Call this on plugin activation

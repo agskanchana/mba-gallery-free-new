@@ -5,6 +5,10 @@ const medbeafgalleryRestBase = (window.medbeafgalleryGalleryConfig && window.med
     : `${window.location.origin}/wp-json/medical-before-after-gallery/v1`;// Add these global variables and functions at the top of your script
 let modalPortal = null;
 let originalModalContainer = null;
+// Timer for the delayed move back out of the portal after closing. Kept so a
+// case opened during the close transition can cancel it (otherwise the move
+// would pull the newly opened window out of its portal and leave it invisible).
+let medbeafgalleryModalRestoreTimer = null;
 
 // Add this variable to store category relationships
 let categoryRelationships = {};
@@ -16,6 +20,9 @@ let currentPairIndex = 0; // Track which image pair is currently displayed
 
 // Create the fixed-position container the modal is moved into while open, so
 // it escapes any theme wrapper with overflow/transform that would clip it.
+// z-index 99999: ties with the admin bar and fixed theme headers (Divi and
+// others use 99999) and wins, because the portal is the last child of <body>;
+// stays under Pro's layers (100000+), e.g. its consent notice in every version.
 function createModalPortal() {
     const existing = document.getElementById('medbeafgallery-modal-portal');
     if (existing) {
@@ -30,7 +37,7 @@ function createModalPortal() {
         left: 0;
         width: 100%;
         height: 100%;
-        z-index: 9999;
+        z-index: 99999;
         display: none;
     `;
 
@@ -45,12 +52,22 @@ function moveModalToPortal() {
         modalPortal = createModalPortal();
     }
 
+    // Last child of <body> again, so it also wins the z-index tie against layers
+    // that scripts added after page load (sticky headers, banners).
+    if (document.body && document.body.lastElementChild !== modalPortal) {
+        document.body.appendChild(modalPortal);
+    }
+
     // Get the original modal
     const modal = document.getElementById('medbeafgallery-modal');
     if (!modal) return;
 
-    // Store the original parent for later restoration
-    originalModalContainer = modal.parentNode;
+    // Store the original parent for later restoration. Opened again before the
+    // last close finished: it is still in the portal, and its parent is the
+    // portal itself, which must not replace the real container.
+    if (modal.parentNode !== modalPortal) {
+        originalModalContainer = modal.parentNode;
+    }
 
     // Move modal to portal
     modalPortal.appendChild(modal);
@@ -61,6 +78,9 @@ function moveModalToPortal() {
 function restoreModalPosition() {
     const modal = document.getElementById('medbeafgallery-modal');
     if (!modal || !originalModalContainer || !modalPortal) return;
+
+    // Opened again since the close: it must stay in the portal.
+    if (modal.classList.contains('active')) return;
 
     // Move modal back to original container
     originalModalContainer.appendChild(modal);
@@ -125,8 +145,13 @@ document.addEventListener("DOMContentLoaded", function() {
     const galleryGrid = document.getElementById('medbeafgallery-gallery-grid');
     if (galleryGrid) galleryGrid.style.display = 'none';
 
-    // Get configuration from the container
-    const galleryContainer = document.querySelector('.medbeafgallery-container');
+    // Get configuration from the container. The data-category / data-per-page
+    // attributes (the shortcode's default_category and items_per_page) live on
+    // the inner .medbeafgallery-gallery-container; this used to query the outer
+    // .medbeafgallery-container, which has neither, so both attributes were
+    // silently ignored (6 per page, starting on "All", whatever was set).
+    const galleryContainer = document.querySelector('.medbeafgallery-gallery-container[data-per-page]')
+        || document.querySelector('.medbeafgallery-container');
     if (galleryContainer) {
         if (galleryContainer.dataset.category) {
             galleryConfig.currentCategory = galleryContainer.dataset.category;
@@ -201,14 +226,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // Check if CTA button should be hidden based on config
-    if (medbeafgalleryGalleryConfig && medbeafgalleryGalleryConfig.showCta === 'false') {
-        const ctaButton = document.getElementById('medbeafgallery-cta-button');
-        if (ctaButton) {
-            ctaButton.style.display = 'none';
-        }
-    }
-
     // Debug category structure
     debugCategoryStructure();
 
@@ -278,6 +295,45 @@ function medbeafgalleryHideEmptyCategoryTiles(cases) {
     });
 }
 
+// The category bar's drop-down style. The select drives the same tiles every
+// other style uses (they stay in the page, hidden), so category filtering, the
+// Pro add-on's subcategories and deep links all keep working through one path.
+function medbeafgalleryInitCategorySelects() {
+    document.querySelectorAll('.medbeafgallery-category-select').forEach(select => {
+        if (select.dataset.medbeafgalleryBound) return;
+        select.dataset.medbeafgalleryBound = '1';
+
+        const bar = select.closest('.medbeafgallery-category-carousel');
+        if (!bar) return;
+        const tileFor = slug => Array.from(bar.querySelectorAll('.medbeafgallery-carousel-item[data-id]'))
+            .find(tile => tile.getAttribute('data-id') === slug);
+
+        select.addEventListener('change', () => {
+            const tile = tileFor(select.value);
+            if (tile && !tile.classList.contains('active')) tile.click();
+        });
+
+        const sync = () => {
+            const active = bar.querySelector('.medbeafgallery-carousel-item.active[data-id]');
+            if (active && select.value !== active.getAttribute('data-id')) {
+                select.value = active.getAttribute('data-id');
+            }
+            // Categories none of the loaded cases use are hidden as tiles
+            // (medbeafgalleryHideEmptyCategoryTiles); leave them out here too.
+            Array.from(select.options).forEach(option => {
+                const tile = tileFor(option.value);
+                const empty = !!(tile && tile.style.getPropertyValue('display') === 'none');
+                option.hidden = empty;
+                option.disabled = empty;
+            });
+        };
+
+        // Watches class/style only, so updating the options cannot retrigger it.
+        new MutationObserver(sync).observe(bar, { subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+        sync();
+    });
+}
+
 // Modify the fetchGalleryData function to not recreate the carousel
 
 async function fetchGalleryData() {
@@ -304,6 +360,7 @@ async function fetchGalleryData() {
 
         // DON'T re-create the carousel, just add events to existing elements
         initCarouselInteractions();
+        medbeafgalleryInitCategorySelects();
 
         // Process gallery data
         galleryData = galleryResult.cases.map(item => {
@@ -784,14 +841,33 @@ function createGalleryItem(item) {
 
     galleryItem.setAttribute('role', 'listitem');
 
+    // Design → Card Style "Hover reveal": a Before/After chip that follows the wipe.
+    const cfg = (typeof medbeafgalleryGalleryConfig !== 'undefined' && medbeafgalleryGalleryConfig) || {};
+    const revealCards = cfg.cardStyle === 'reveal' && !!beforeSrc && !!afterSrc;
+    const stateChip = revealCards
+        ? `<span class="medbeafgallery-card-state" aria-hidden="true"><span class="medbeafgallery-card-state-before">${medbeafgalleryEscapeAttr(cfg.beforeLabel || cfg.beforeText || 'Before')}</span><span class="medbeafgallery-card-state-after">${medbeafgalleryEscapeAttr(cfg.afterLabel || cfg.afterText || 'After')}</span></span>`
+        : '';
+    // Hover-reveal cards show each photo whole, over a blurred copy of itself
+    // that fills the frame (no part of a result cropped away). The after copy
+    // wipes in with the after photo.
+    const revealBackdrop = (src, side) => revealCards
+        ? `<img src="${medbeafgalleryEscapeAttr(src)}" alt="" aria-hidden="true" class="medbeafgallery-preview-backdrop medbeafgallery-preview-backdrop-${side}" loading="lazy" decoding="async">`
+        : '';
+    if (revealCards) {
+        galleryItem.classList.add('medbeafgallery-reveal-card');
+    }
+
     // Create the gallery item HTML
     galleryItem.innerHTML = `
         <div class="medbeafgallery-gallery-image-container">
             ${multiViewBadge}
             <div class="medbeafgallery-preview-container">
+                ${revealBackdrop(beforeSrc, 'before')}
                 ${beforeTag}
                 <div class="medbeafgallery-preview-divider" aria-hidden="true"></div>
+                ${revealBackdrop(afterSrc, 'after')}
                 ${afterTag}
+                ${stateChip}
             </div>
             <button type="button" class="medbeafgallery-gallery-view-btn" data-id="${item.id}" aria-label="View details for ${safeTitle}">
                 <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -807,6 +883,11 @@ function createGalleryItem(item) {
 
         </div>
     `;
+
+    if (revealCards) {
+        medbeafgalleryInitRevealCard(galleryItem, item.id);
+    }
+    // (medbeafgalleryInitRevealCard and the one-time wipe are defined after this function.)
 
     // Add click event listener to the view button
     const viewBtn = galleryItem.querySelector('.medbeafgallery-gallery-view-btn');
@@ -824,6 +905,94 @@ function createGalleryItem(item) {
     });
 
     return galleryItem;
+}
+
+/* ── Hover-reveal cards (Design → Card Style) ─────────────────────────────────
+   The card shows the before photo; the after photo wipes in on hover or
+   keyboard focus (CSS), on a press-and-hold on touch screens (here), and by
+   itself on ONE card per page view — the first one that scrolls into view — to
+   show visitors that the photo changes. Every card doing it (each new batch
+   while scrolling) read as the grid flickering. Visitors who ask for reduced
+   motion get no automatic wipe.
+   ────────────────────────────────────────────────────────────────────────── */
+
+const medbeafgalleryPeekedIds = new Set();
+let medbeafgalleryPeekObserver = null;
+let medbeafgalleryPeekPlayed = false;
+
+function medbeafgalleryInitRevealCard(card, caseId) {
+    const area = card.querySelector('.medbeafgallery-gallery-image-container');
+    if (!area) return;
+
+    // Touch: press and hold to see the after photo; a quick tap still opens the case.
+    let holdTimer = null;
+    let held = false;
+    const endHold = () => {
+        clearTimeout(holdTimer);
+        holdTimer = null;
+        if (held) card.classList.remove('is-revealed');
+    };
+    area.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse') return;
+        held = false;
+        clearTimeout(holdTimer);
+        holdTimer = setTimeout(() => {
+            held = true;
+            card.classList.add('is-revealed');
+        }, 280);
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((type) => area.addEventListener(type, endHold));
+    area.addEventListener('contextmenu', (e) => {
+        if (holdTimer || held) e.preventDefault();
+    });
+    // The click that ends a hold must not open the case.
+    card.addEventListener('click', (e) => {
+        if (held) {
+            held = false;
+            e.stopImmediatePropagation();
+            e.preventDefault();
+        }
+    }, true);
+
+    medbeafgalleryObservePeek(card, caseId);
+}
+
+function medbeafgalleryObservePeek(card, caseId) {
+    if (!('IntersectionObserver' in window)) return;
+    if (medbeafgalleryPeekPlayed) return;
+    if (medbeafgalleryPeekedIds.has(String(caseId))) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    if (!medbeafgalleryPeekObserver) {
+        medbeafgalleryPeekObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting || medbeafgalleryPeekPlayed) return;
+                const el = entry.target.closest('.medbeafgallery-gallery-item') || entry.target;
+                const id = el.dataset.id;
+                if (medbeafgalleryPeekedIds.has(id)) return;
+                medbeafgalleryPeekedIds.add(id);
+                // One card per page view: stop watching the rest.
+                medbeafgalleryPeekPlayed = true;
+                medbeafgalleryPeekObserver.disconnect();
+
+                const delay = 300;
+                const play = () => setTimeout(() => {
+                    if (!el.isConnected || el.matches(':hover')) return;
+                    el.classList.add('is-peeking');
+                    setTimeout(() => el.classList.remove('is-peeking'), 2200);
+                }, delay);
+                const afterImg = el.querySelector('img.medbeafgallery-preview-after');
+                if (afterImg && !afterImg.complete) {
+                    afterImg.addEventListener('load', play, { once: true });
+                } else {
+                    play();
+                }
+            });
+        }, { threshold: 0.5 });
+    }
+    // Watch the photo, not the whole card: with longer card text (Pro) half a
+    // card can be below the fold while its photo is fully in view.
+    medbeafgalleryPeekObserver.observe(card.querySelector('.medbeafgallery-gallery-image-container') || card);
 }
 
 /* ── Modal focus management ──────────────────────────────────────────────────
@@ -980,7 +1149,9 @@ function closeModal() {
     medbeafgalleryLastFocused = null;
 
     // After transition completes, restore modal position
-    setTimeout(() => {
+    clearTimeout(medbeafgalleryModalRestoreTimer);
+    medbeafgalleryModalRestoreTimer = setTimeout(() => {
+        medbeafgalleryModalRestoreTimer = null;
         restoreModalPosition();
     }, 300); // Match this to your CSS transition time
 }
@@ -1050,7 +1221,6 @@ function initModal() {
     const nextButton = document.querySelector('.medbeafgallery-modal-next');
     const currentItemCounter = document.getElementById('medbeafgallery-current-item');
     const totalItemsCounter = document.getElementById('medbeafgallery-total-items');
-    const ctaButton = document.getElementById('medbeafgallery-cta-button');
 
     // Image view control buttons
     const splitViewBtn = document.querySelector('.medbeafgallery-split-view');
@@ -1304,6 +1474,12 @@ function showImagePair(item, index) {
     wrapper.innerHTML = '';
     wrapper.classList.add('loading');
 
+    // The blurred backdrop (Design → Case Window Background) is a copy of the
+    // photo itself, so remember both URLs for setViewMode().
+    wrapper.dataset.backdropBefore = pair.beforeImg || '';
+    wrapper.dataset.backdropAfter = pair.afterImg || '';
+    medbeafgallerySetBackdrop(wrapper, pair.afterImg || pair.beforeImg);
+
     // Add loading spinner
     const spinner = document.createElement('div');
     spinner.className = 'medbeafgallery-loading-spinner';
@@ -1387,6 +1563,47 @@ function showImagePair(item, index) {
     if (pairInfoText) {
         pairInfoText.textContent = pair?.description || `View ${index + 1}`;
     }
+}
+
+// The doctor card under the photo in the case window (free modal only — the
+// strip is not printed when Pro's details panel is shown, which has its own).
+function medbeafgalleryRenderDoctorStrip(item) {
+    const strip = document.getElementById('medbeafgallery-doctor-strip');
+    if (!strip) return;
+    const d = item && item.doctor;
+    if (!d || !d.name) {
+        strip.hidden = true;
+        strip.innerHTML = '';
+        return;
+    }
+    const esc = medbeafgalleryEscapeAttr;
+    const photo = d.photo
+        ? `<img class="medbeafgallery-doctor-photo" src="${esc(d.photo)}" alt="" loading="lazy" decoding="async">`
+        : `<span class="medbeafgallery-doctor-photo medbeafgallery-doctor-initials" aria-hidden="true">${esc(String(d.name).replace(/^(dr\.?\s+)/i, '').charAt(0).toUpperCase())}</span>`;
+    const name = d.url
+        ? `<a class="medbeafgallery-doctor-name" href="${esc(d.url)}">${esc(d.name)}</a>`
+        : `<span class="medbeafgallery-doctor-name">${esc(d.name)}</span>`;
+    strip.innerHTML = `
+        ${photo}
+        <div class="medbeafgallery-doctor-text">
+            <span class="medbeafgallery-doctor-label">${esc((typeof medbeafgalleryGalleryConfig !== 'undefined' && medbeafgalleryGalleryConfig.treatedByText) || 'Treated by')}</span>
+            ${name}
+            ${d.credentials ? `<span class="medbeafgallery-doctor-credentials">${esc(d.credentials)}</span>` : ''}
+            ${d.location ? `<span class="medbeafgallery-doctor-location">${esc(d.location)}</span>` : ''}
+        </div>`;
+    strip.hidden = false;
+}
+
+// Point the case window's blurred backdrop at a photo (CSS custom property read
+// by .medbeafgallery-backdrop-blur .medbeafgallery-before-after-wrapper::before).
+function medbeafgallerySetBackdrop(el, url) {
+    if (!el) return;
+    if (!url) {
+        el.style.removeProperty('--medbeafgallery-backdrop');
+        return;
+    }
+    const safe = String(url).replace(/[\r\n]/g, '').replace(/"/g, '%22').replace(/\\/g, '%5C');
+    el.style.setProperty('--medbeafgallery-backdrop', 'url("' + safe + '")');
 }
 
 // Create a new image pair wrapper (also needed globally)
@@ -1506,6 +1723,13 @@ function setViewMode(mode) {
     splitViewBtn?.classList.toggle('active', mode === 'split');
     beforeViewBtn?.classList.toggle('active', mode === 'before');
     afterViewBtn?.classList.toggle('active', mode === 'after');
+
+    // Keep the blurred backdrop in step with the photo on show.
+    if (wrapper.dataset.backdropAfter || wrapper.dataset.backdropBefore) {
+        medbeafgallerySetBackdrop(wrapper, mode === 'before'
+            ? (wrapper.dataset.backdropBefore || wrapper.dataset.backdropAfter)
+            : (wrapper.dataset.backdropAfter || wrapper.dataset.backdropBefore));
+    }
 
     // Update visibility based on view mode
     if (mode === 'split') {
@@ -1647,7 +1871,6 @@ function openModal(id) {
     const procedureDescription = document.getElementById('medbeafgallery-procedure-description');
     const prevButton = document.querySelector('.medbeafgallery-modal-prev');
     const nextButton = document.querySelector('.medbeafgallery-modal-next');
-    const ctaButton = document.getElementById('medbeafgallery-cta-button');
     const imagePairsContainer = document.querySelector('.medbeafgallery-image-sets-container');
     const pairIndicators = document.querySelector('.medbeafgallery-pair-indicators');
     const pairInfoText = document.querySelector('.medbeafgallery-pair-description');
@@ -1665,6 +1888,8 @@ function openModal(id) {
     if (caseTitle) caseTitle.textContent = medbeafgalleryDecodeEntities(item.title) || 'Case Study';
     if (caseDesc) caseDesc.innerHTML = item.description || '';
     if (caseCategory) caseCategory.textContent = medbeafgalleryDecodeEntities(item.categoryName || item.category) || 'Uncategorized';
+
+    medbeafgalleryRenderDoctorStrip(item);
 
     if (caseGender && item.gender) caseGender.textContent = capitalizeSentence(item.gender);
     if (caseAge && item.age) caseAge.textContent = item.age;
@@ -1769,7 +1994,10 @@ function openModal(id) {
         updateNavigationButtons();
     }
 
-    // Move modal to portal before displaying
+    // Move modal to portal before displaying. A close that is still finishing
+    // must not move it back out afterwards.
+    clearTimeout(medbeafgalleryModalRestoreTimer);
+    medbeafgalleryModalRestoreTimer = null;
     moveModalToPortal();
 
     // Show modal FIRST so Cocoen can calculate dimensions

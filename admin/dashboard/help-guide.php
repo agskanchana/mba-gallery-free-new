@@ -22,7 +22,7 @@ function medbeafgallery_display_help_guide() {
             <div class="medbeafgallery-help-column">
                 <h3><?php esc_html_e('1. Create Categories', 'medical-before-after-gallery'); ?></h3>
                 <p><?php esc_html_e('First, create categories for your before-after cases, such as "Face", "Nose", "Body", etc.', 'medical-before-after-gallery'); ?></p>
-                <a href="<?php echo esc_url(admin_url('edit-tags.php?taxonomy=medbeafgallery_category&post_type=medbeafgallery_case')); ?>" class="button">
+                <a href="<?php echo esc_url(medbeafgallery_categories_admin_url()); ?>" class="button">
                     <?php esc_html_e('Manage Categories', 'medical-before-after-gallery'); ?>
                 </a>
             </div>
