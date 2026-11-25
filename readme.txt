@@ -17,6 +17,10 @@ Showcase real patient results with a clean, fast before-and-after case gallery. 
 
 Add your cases, pick a category for each, and put `[medbeafgallery]` on any page. Visitors browse by category and open each case in a case window with a draggable before/after slider.
 
+**See it in two minutes** (the designs in the video are part of the Pro add-on):
+
+https://www.youtube.com/watch?v=LHW8qlbSHco
+
 = Free features =
 
 * **Comparison slider** — drag to compare, or switch to before-only and after-only views
@@ -51,10 +55,6 @@ The optional [Pro add-on](https://medicalbeforeaftergallery.com/) adds:
 * Ghost camera for matching after photos, a photo line-up tool, and transformation reels for social media
 * Watermarks that never touch your original photos, a sensitive-content notice, annotations with a "What to notice" tour
 * Live design preview, a setup wizard and a ready-to-publish checklist
-
-**See it in two minutes** (the designs in the video are part of the Pro add-on):
-
-https://www.youtube.com/watch?v=LHW8qlbSHco
 
 **Free demo:** [Try the free plugin](https://demo.medicalbeforeaftergallery.com/free/)
 
