@@ -52,9 +52,13 @@ The optional [Pro add-on](https://medicalbeforeaftergallery.com/) adds:
 * Watermarks that never touch your original photos, a sensitive-content notice, annotations with a "What to notice" tour
 * Live design preview, a setup wizard and a ready-to-publish checklist
 
-**Free Demo:** [View Free Demo](https://demo.medicalbeforeaftergallery.com/free/)
+**See it in two minutes** (the designs in the video are part of the Pro add-on):
 
-**Pro Demo:** [View Pro Demo](https://demo.medicalbeforeaftergallery.com/)
+https://www.youtube.com/watch?v=LHW8qlbSHco
+
+**Free demo:** [Try the free plugin](https://demo.medicalbeforeaftergallery.com/free/)
+
+**Pro demos:** [Try every Pro design](https://medicalbeforeaftergallery.com/demo/)
 
 **Perfect for:**
 
