@@ -5,7 +5,8 @@ name: Deploy to WordPress.org
 # checks run, the build (.distignore applied) is committed to the WordPress.org
 # SVN repository — trunk plus tags/<version> — and the commit is tagged with a
 # GitHub release carrying the same ZIP. A push that does not change the version
-# deploys nothing.
+# deploys nothing, unless only the plugin page changed (readme.txt, .wordpress-org/):
+# then just that is updated for the released version, and sites get no update.
 #
 # Releasing therefore means: bump the version everywhere bin/check-release.sh
 # looks (plugin header, MEDBEAFGALLERY_VERSION, readme "Stable tag", a changelog
@@ -36,8 +37,11 @@ jobs:
     outputs:
       version: ${{ steps.compare.outputs.version }}
       release: ${{ steps.compare.outputs.release }}
+      page: ${{ steps.page.outputs.changed }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Compare with WordPress.org
         id: compare
@@ -46,6 +50,7 @@ jobs:
           live=$(curl -sf "https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&request%5Bslug%5D=$SLUG" | jq -r '.version // empty')
           code=$(curl -s -o /dev/null -w '%{http_code}' "https://plugins.svn.wordpress.org/$SLUG/tags/$version/")
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "live=$live" >> "$GITHUB_OUTPUT"
           echo "Plugin version: $version | WordPress.org stable: ${live:-unknown} | tags/$version: HTTP $code"
 
           if [ -z "$version" ] || [ -z "$live" ]; then
@@ -68,6 +73,48 @@ jobs:
             echo "release=true" >> "$GITHUB_OUTPUT"
             echo "New version $version (WordPress.org has $live): deploying."
           fi
+
+      - name: Only the plugin page changed?
+        id: page
+        if: github.event_name == 'push' && steps.compare.outputs.release == 'false' && steps.compare.outputs.version == steps.compare.outputs.live
+        env:
+          VERSION: ${{ steps.compare.outputs.version }}
+        run: |
+          # Everything changed since the released commit, leaving out what never ships (.distignore).
+          git rev-parse -q --verify "refs/tags/$VERSION" > /dev/null || { echo "No tag $VERSION."; exit 0; }
+          changed=$(git diff --name-only "refs/tags/$VERSION" HEAD -- . ':(exclude).github' ':(exclude)bin' ':(exclude).distignore' ':(exclude).gitignore' ':(exclude).gitattributes' ':(exclude)CHANGELOG.md' ':(exclude)README.md')
+          echo "Changed since $VERSION: ${changed:-nothing}"
+          if [ -n "$changed" ] && ! grep -qvE '^(readme\.txt|\.wordpress-org/)' <<< "$changed"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  page:
+    name: Plugin page
+    needs: detect
+    if: needs.detect.outputs.page == 'true'
+    runs-on: ubuntu-latest
+    environment: wordpress-org
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Release checks for this version
+        run: bash bin/check-release.sh "${{ needs.detect.outputs.version }}"
+
+      # Updates readme.txt in trunk and in the released tag, and the assets. It stops
+      # without committing when any plugin file differs from WordPress.org.
+      - name: Normalize SVN credentials
+        shell: bash
+        env:
+          RAW_SVN_USERNAME: ${{ secrets.SVN_USERNAME || secrets.WP_ORG_USERNAME }}
+          RAW_SVN_PASSWORD: ${{ secrets.SVN_PASSWORD || secrets.WP_ORG_PASSWORD }}
+        run: |
+          u="${RAW_SVN_USERNAME//$'\r'/}"; u="${u%$'\n'}"; p="${RAW_SVN_PASSWORD//$'\r'/}"; p="${p%$'\n'}"
+          echo "::add-mask::$u"; echo "::add-mask::$p"
+          { printf 'SVN_USERNAME=%s\n' "$u"; printf 'SVN_PASSWORD=%s\n' "$p"; } >> "$GITHUB_ENV"
+
+      - uses: 10up/action-wordpress-plugin-asset-update@2480306f6f693672726d08b5917ea114cb2825f7 # 2.2.0
+        env:
+          SLUG: ${{ env.SLUG }}
 
   ci:
     needs: detect
